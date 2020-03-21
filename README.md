@@ -6,4 +6,4 @@
 ## Customize and set up:
 Add custom schedules in timer.json file and use the "setchannel"-command and the school acronym you would like to use in the channel you would like to assign to that school. (e.g. ".!setchannel thvs") Channel-ID will be put automatically in the timer.json file.
 
-**Please do not create pull requests with the dependancies attatched. I will not approve them.**
+**Please do not create pull requests with the dependancies attached. I will not approve them.**
