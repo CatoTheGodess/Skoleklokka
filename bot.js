@@ -62,7 +62,8 @@ function makeTimeplanEmbed(msg) {
     timeplanEmbed.setDescription(`Timeplan for ${timer[school].fullName}`)
     for (let i = 0; i < timer[school].timer.length; i++) {
         let stringsToBeAdded = [`${telleTall[i].capitalizeFirstLetter()} økt:`, `${timer[school].timer[i].start} - ${timer[school].timer[i].slutt}`]
-        if (returnCurrentPeriod(school)[0] === "iøkt" && timer[school].timer[i] === returnCurrentPeriod(school)[1]) {
+        let currentPeriod = returnCurrentPeriod(school)
+        if (currentPeriod[0] === "iøkt" && timer[school].timer[i] === currentPeriod[1]) {
             stringsToBeAdded.forEach(function(part, index, theArray) {
                 theArray[index] = "**" + part + "**";
               });
@@ -189,7 +190,7 @@ function milliToTime(duration, returnString = false) {
     
 }
 
-var lastNoti = {"school":"","LastTime":""}
+var lastNoti = {"school":"","lastTime":""}
 
 //Sjekke etter timer som starter om 5 min
 function intervalFunc() {
@@ -200,11 +201,12 @@ function intervalFunc() {
         console.log("--- " + getNameByIndex(timer, skolecount) + " ---");
         for (let i = 0; i < timer[getNameByIndex(timer, skolecount)].timer.length; i++) {
             // Notify 5-6 min before event
-            if (timeToMilli(getClock()) >= (timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start) - 360000) && timeToMilli(getClock()) <= (timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start) - 300000) && (timeToMilli(getClock()) - lastNoti >= 300000)) {
+            if (timeToMilli(getClock()) >= (timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start) - 360000) && timeToMilli(getClock()) <= (timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start) - 300000) && (timeToMilli(getClock()) - lastNoti.lastTime >= 300000)) {
                 client.channels.fetch(timer[getNameByIndex(timer, skolecount)].kanal)
                     .then(channel => channel.send("Neste økt starter om 5 min!"))
                     .catch(console.error);
-                lastNoti = timeToMilli(getClock());
+                lastNoti.lastTime = timeToMilli(getClock());
+                lastNoti.school = getNameByIndex(timer, skolecount);
                 console.log(`class found ${i} sent notification`)
             }
         }
