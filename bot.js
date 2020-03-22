@@ -8,6 +8,8 @@ var date = new Date();
 var auth = require('./auth.json');
 var timer = require('./timer.json');
 
+var isReady = true;
+
 var prefix = ".!";
 
 const telleTall = ["første", "andre", "tredje", "fjerde", "femte", "sjette", "sjuende", "åttende"]
@@ -19,7 +21,10 @@ const helpEmbed = new Discord.MessageEmbed()
     .setDescription('Her er noen kommandoer denne botten forstår')
     .addField(`${prefix}help`, 'Tar deg hit')
     .addField(`${prefix}timeplan`, 'Viser en enkel oversikt over når øktene starter og slutter')
-    .addField(`${prefix}time [HH:MM]`, 'Sjekker når neste økt starter. Gir man et tidspunkt, vil botten ta utgangspunkt til det tidspunktet isteden for nåværende klokkeslett')
+    .addField(`${prefix}time`, 'Sjekker hvilken økt det er og når den slutter. Tar utgangspunkt fra nåværende tidspunkt')
+    .addField(`${prefix}time [HH:MM]`, 'Sjekker hvilken økt det er og når den slutter. Botten vil ta utgangspunkt til det tidspunktet som er gitt',true)
+    .addField(`${prefix}time neste`, 'Sjekker når neste økt starter. Botten vil ta utgangspunkt til det tidspunktet som er gitt',true)
+    .addField(`${prefix}<lydfil>?`, 'Er lydfilen installert av admin, kan den spilles av med denne kommandoen.')
     .setFooter('Hilsen Syver ;)');
 
 
@@ -361,8 +366,37 @@ client.on('message', msg => {
         };
     } else if (command === "cato") {
         msg.channel.send("Cato? CATO?! Neii")
+    } else if (isReady && /\w*\?/.test(command)){
+        let match = /(\w*)\?/.exec(command)
+        console.log(match)
+        console.log(match[1])
+        isReady = false;
+        var voiceChannel = msg.member.voice.channel;
+        let files = fs.readdirSync('./src/')
+        console.log(files)
+        if (files.indexOf(match[1] + ".mp3") > -1) {
+            msg.delete()
+            console.log("kjskld")
+            let ender = () => {
+                msg.member.voice.channel.leave();
+            };
+            voiceChannel.join().then(connection => {
+                const dispatcher = connection.play(`./src/${match[1]}.mp3`)
+                dispatcher.setVolume(0.5)
+                dispatcher.on("finish", ender);
+            }).catch(err => console.log(err));
+            isReady = true;
+        } else {
+            msg.channel.send("Fant ikke den filen.")
+            isReady = true;
+        }
     };
 })
+
+function arrayContains(needle, arrhaystack)
+{
+    return (arrhaystack.indexOf(needle) > -1);
+}
 
 client.on('guildMemberAdd', member => {
     member.send("Hei! Jeg er fra Skolegården og jeg er en klokke, men nå skal jeg fortelle deg noe annet enn tiden!\n\nVaktmesteren registrerer medlemmer manuelt. For å kunne delta i samtaler og få elev-rollen må du **sende en melding** med Discord-taggen din og skolen du går på til **SYV1002** på Teams. Da kan han verifisere at du er deg. \n(Finner du han ikke ved søkelinjen, trykk \"Søk etter SYV1002\" og så \"Personer\". Der skal du kunne se Syver Stensholt.");
