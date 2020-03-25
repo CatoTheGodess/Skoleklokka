@@ -65,4 +65,46 @@
         "kanal": "689462214561759406",
         "fullName": "Re videregående skole"
     }
+    "skovs": {
+        "timer": [
+            {
+                "start": "80:00",
+                "start": "08:45"
+            },
+            {
+                "start: "08:55",
+                "slutt: "09:40"
+            },
+            {
+                "start": "09:50",
+                "slutt": "10:35"
+            },
+            {
+                "start: "10:45",
+                "slutt: "11:30"
+            },
+            {
+                "start: "12:00",
+                "slutt: "12:45"
+            },
+            {
+                "start: "12:55",
+                "slutt: "13:40"
+            },
+            {
+                "start: "13:50",
+                "slutt: "14:35"
+            },
+            {
+                "start: "14:45",
+                "slutt: "15:30"
+            },
+            {
+                "start: "15:30",
+                "slutt: "16:05"
+            },
+        ],
+        "kanal": "",
+        "fullName": "Skogmo videregående skole"
+    }
 }
