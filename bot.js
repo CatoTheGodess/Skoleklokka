@@ -347,7 +347,7 @@ client.on('message', msg => {
             var timerContent = fs.readFileSync("timer.json");
             var timerJson = JSON.parse(timerContent);
             console.log(timerJson);
-            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '' }; };
+            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', fullName:''}; };
             timerJson[args[0]].kanal = msg.channel.id;
             console.log(timerJson);
             fs.writeFileSync("timer.json", JSON.stringify(timerJson));
