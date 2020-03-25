@@ -29,7 +29,30 @@ const helpEmbed = new Discord.MessageEmbed()
     .addField(`${prefix}<lydfil>?`, 'Er lydfilen installert av admin, kan den spilles av med denne kommandoen.')
     .setFooter('Hilsen Syver ;)');
 
+const WebUntisLib = require('webuntis');
 
+const untis = new WebUntisLib.WebUntisAnonymousAuth(
+    'Heyerdahl',
+    'romres.ist-asp.com'
+);
+
+untis
+    .login()
+    .then(() => {
+        return untis.getTimegrid();
+    })
+    .then(timetable => {
+        console.log(timetable[0])
+    })
+    .then(() => {
+        return untis.getClasses();
+    })
+    .then(klasses => {
+        const testKlasse = klasses[0];
+        return untis.getTimetableForToday(testKlasse.id, WebUntisLib.TYPES.CLASS);
+    })
+    .then(console.log)
+    .catch(console.trace);
 
 // Returns state right now. (In class or not, etc)
 function returnCurrentPeriod(skole, when = getClock()) {
@@ -230,6 +253,22 @@ function intervalFunc() {
     }
 }
 
+function checkIfSchoolExist(part,school){
+    switch (part) {
+        case "timer":
+            if (timer[school].timer[0]) {
+                return true
+            } else return false
+        case "fullName":
+            if (timer[school].fullName != "") {
+                return true
+            } else return false
+        case "kanal":
+            if (timer[school].kanal != "") {
+                return true
+            } else return false
+    }
+}
 
 //-------------------------------------------- MSG
 
@@ -359,23 +398,28 @@ client.on('message', msg => {
     } else if (command === `time`) {
         var schoolname = msg.channel.name.split("-")[0]
         if (!args[0] || args[0] === `info`) {
-            if (!timer[schoolname]) {
-                msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
-            } else {
+            if (timer[schoolname] && checkIfSchoolExist("timer",schoolname)) {
                 msgCurrentOkt(msg, schoolname);
+            } else {
+                msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
             };
 
         } else if (args[0] === `neste`) {
 
-            if (!timer[schoolname]) {
-                msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
-            } else {
+            if (timer[schoolname] && checkIfSchoolExist("timer",schoolname)) {
                 msgNextOkt(msg, schoolname);
+            } else {
+                msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
             };
 
         } else if (/[0-2]\d:[0-6]\d/.test(args[0])) {
-            msg.channel.send(`Bruker tidspunkt ${args[0]}.`);
-            msgNextOkt(msg, schoolname, args[0]);
+            if (timer[schoolname] && checkIfSchoolExist("timer",schoolname)) {
+                msg.channel.send(`Bruker tidspunkt ${args[0]}.`);
+                msgNextOkt(msg, schoolname, args[0]);
+            } else {
+                msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+            };
+            
 
         } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
     } else if (command === `help` || command === `hjelp`) {
