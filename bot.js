@@ -287,7 +287,7 @@ async function findAndSaveClasses(nameKey,school) {
         console.log(timerJson);
         fs.writeFileSync("timer.json", JSON.stringify(timerJson));
         console.log("found from server and saved")
-        return resultSearch
+        return resultSearch;
 
     }
 }
@@ -300,14 +300,15 @@ function timetableToEmbed(timetable) {
     timeArray[firstTime] = [timetableSorted[0]]
     console.log(timeArray)
     for(let i = 1; i < timetableSorted.length;i++) {
-        console.log(timetableSorted[i].startTime + ">" + Object.keys(timeArray)[Object.keys(timeArray).length - 1])
-        if (!Object.keys(timeArray).indexOf(timetableSorted[i].start)) {
+        console.log("")
+        console.log(Object.keys(timeArray) + ".indexOf(" + timetableSorted[i].startTime + ")")
+        console.log(!Object.keys(timeArray).indexOf(timetableSorted[i].startTime))
+        if (!Object.keys(timeArray).indexOf(timetableSorted[i].startTime)) {
             timeArray[Object.keys(timeArray).length] = timetableSorted[i]
         } else {
-            timeArray[Object.keys(timeArray).length-1][Object.keys(timeArray)[o]] = timetableSorted[i]
+            console.log(timeArray[timeArray[Object.keys(timeArray).length].startTime])
+            timeArray[timeArray[Object.keys(timeArray).length].startTime] = timetableSorted[i]
         }
-
-        
     }
     console.log(timeArray)
 }
