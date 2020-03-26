@@ -36,23 +36,8 @@ const untis = new WebUntisLib.WebUntisAnonymousAuth(
     'romres.ist-asp.com'
 );
 
-untis
-    .login()
-    .then(() => {
-        return untis.getTimegrid();
-    })
-    .then(timetable => {
-        console.log(timetable[0])
-    })
-    .then(() => {
-        return untis.getClasses();
-    })
-    .then(klasses => {
-        const testKlasse = klasses[0];
-        return untis.getTimetableForToday(testKlasse.id, WebUntisLib.TYPES.CLASS);
-    })
-    .then(console.log)
-    .catch(console.trace);
+
+    
 
 // Returns state right now. (In class or not, etc)
 function returnCurrentPeriod(skole, when = getClock()) {
@@ -270,6 +255,64 @@ function checkIfSchoolExist(part,school){
     }
 }
 
+async function findAndSaveClasses(nameKey,school) {
+    if (timer[school].savedClasses[nameKey]) {
+        console.log("found saved")
+        return timer[school].savedClasses[nameKey]
+    } else {
+        var untisGetclasses = untis
+            .login()
+            .then(() => {
+                return untis.getClasses();
+            })
+        var myArray = await untisGetclasses
+        untis.logout()
+
+        let resultSearch;
+        for (var i=0; i < myArray.length; i++) {
+            if (myArray[i].name === nameKey) {
+                resultSearch = myArray[i];
+            }
+        }
+
+        if (resultSearch == undefined) {
+            return("not found")
+        }
+
+        var timerContent = fs.readFileSync("timer.json");
+        var timerJson = JSON.parse(timerContent);
+        console.log(timerJson);
+        if (!timerJson[school]) { timerJson[school] = { 'timer': [], 'kanal': '', 'fullName':'', 'savedClasses':{}}; };
+        timerJson[school].savedClasses[nameKey] = resultSearch;
+        console.log(timerJson);
+        fs.writeFileSync("timer.json", JSON.stringify(timerJson));
+        console.log("found from server and saved")
+        return resultSearch;
+
+    }
+}
+
+function timetableToEmbed(timetable) {
+    let timetableSorted = timetable.sort((a, b) => parseFloat(a.startTime) - parseFloat(b.startTime));
+    console.log(timetableSorted)
+    let firstTime = timetableSorted[0].startTime
+    let timeArray = {};
+    timeArray[firstTime] = [timetableSorted[0]]
+    console.log(timeArray)
+    for(let i = 1; i < timetableSorted.length;i++) {
+        console.log("")
+        console.log(Object.keys(timeArray) + ".indexOf(" + timetableSorted[i].startTime + ")")
+        console.log(!Object.keys(timeArray).indexOf(timetableSorted[i].startTime))
+        if (!Object.keys(timeArray).indexOf(timetableSorted[i].startTime)) {
+            timeArray[Object.keys(timeArray).length] = timetableSorted[i]
+        } else {
+            console.log(timeArray[timeArray[Object.keys(timeArray).length].startTime])
+            timeArray[timeArray[Object.keys(timeArray).length].startTime] = timetableSorted[i]
+        }
+    }
+    console.log(timeArray)
+}
+
 //-------------------------------------------- MSG
 
 var repeatedStrings =
@@ -369,6 +412,8 @@ client.on('ready', async () => {
         setInterval(intervalFunc, 20000)
         client.user.setPresence({ activity: { name: `tikkelyder. "${prefix}"` }, status: 'available' })
             .catch(console.error);
+
+        
     }
 });
 
@@ -386,7 +431,7 @@ client.on('message', msg => {
             var timerContent = fs.readFileSync("timer.json");
             var timerJson = JSON.parse(timerContent);
             console.log(timerJson);
-            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', fullName:''}; };
+            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', 'fullName':''}; };
             timerJson[args[0]].kanal = msg.channel.id;
             console.log(timerJson);
             fs.writeFileSync("timer.json", JSON.stringify(timerJson));
@@ -422,6 +467,43 @@ client.on('message', msg => {
             
 
         } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
+    } else if (command === `klasse`) {
+        var schoolname = msg.channel.name.split("-")[0]
+        if (args[0]) {
+            if (args[1] === `timeplan`) {
+                findAndSaveClasses(args[0],schoolname).then(resultClass => {
+                    if (resultClass == "not found") {
+                        msg.channel.send("Klassen ble ikke funnet")
+                    } else {
+                        console.log(resultClass.id);
+                        untis.login()
+                        .then(() => {
+                            return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
+                            .then(timeTable => {
+                                console.log(timeTable)
+                                timetableToEmbed(timeTable);
+                            })
+                            .then(untis.logout())
+                        })
+                        
+                        
+                    }
+                })
+            } else {
+                findAndSaveClasses(args[0],schoolname).then(resultClass => {
+                    if (resultClass == "not found") {
+                        msg.channel.send("Klassen ble ikke funnet")
+                    } else {
+                        let embed = new Discord.MessageEmbed()
+                        .setTitle(resultClass.longName)
+                        msg.channel.send(embed)
+                    }
+                })
+            }
+            
+        } else {
+            msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.")
+        }
     } else if (command === `help` || command === `hjelp`) {
         msg.channel.send(helpEmbed);
     } else if (command === `timeplan`) {
