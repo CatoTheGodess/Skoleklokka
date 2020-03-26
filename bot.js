@@ -31,13 +31,17 @@ const helpEmbed = new Discord.MessageEmbed()
 
 const WebUntisLib = require('webuntis');
 
-const untis = new WebUntisLib.WebUntisAnonymousAuth(
-    'Heyerdahl',
-    'romres.ist-asp.com'
-);
+var untis;
 
+process.on('SIGINT', function() {
+    console.log("Caught interrupt signal");
 
-    
+    if (untis) {
+        untis.logout().then(process.exit())
+    } else {
+        process.exit()
+    }
+});
 
 // Returns state right now. (In class or not, etc)
 function returnCurrentPeriod(skole, when = getClock()) {
@@ -260,22 +264,22 @@ async function findAndSaveClasses(nameKey,school) {
         console.log("found saved")
         return timer[school].savedClasses[nameKey]
     } else {
-        var untisGetclasses = untis
-            .login()
+        var untisGetclasses = loginSchool(timer[school].untisName)
             .then(() => {
                 return untis.getClasses();
             })
         var myArray = await untisGetclasses
+        console.log(myArray)
         untis.logout()
 
         let resultSearch;
         for (var i=0; i < myArray.length; i++) {
-            if (myArray[i].name === nameKey) {
-                resultSearch = myArray[i];
+            if (await myArray[i].name === nameKey) {
+                resultSearch = await myArray[i];
             }
         }
 
-        if (resultSearch == undefined) {
+        if (await resultSearch == undefined) {
             return("not found")
         }
 
@@ -292,7 +296,16 @@ async function findAndSaveClasses(nameKey,school) {
     }
 }
 
+async function loginSchool(school) {
+    untis = new WebUntisLib.WebUntisAnonymousAuth(
+        school,
+        'romres.ist-asp.com'
+    );
+    return await untis.login()
+}
+
 function timetableToEmbed(timetable) {
+    
     let timetableSorted = timetable.sort((a, b) => parseFloat(a.startTime) - parseFloat(b.startTime));
     console.log(timetableSorted)
     let firstTime = timetableSorted[0].startTime
@@ -302,16 +315,33 @@ function timetableToEmbed(timetable) {
     for(let i = 1; i < timetableSorted.length;i++) {
         console.log("")
         console.log(Object.keys(timeArray) + ".indexOf(" + timetableSorted[i].startTime + ")")
-        console.log(!Object.keys(timeArray).indexOf(timetableSorted[i].startTime))
-        if (!Object.keys(timeArray).indexOf(timetableSorted[i].startTime)) {
-            timeArray[Object.keys(timeArray).length] = timetableSorted[i]
+        console.log(Object.keys(timeArray).indexOf(timetableSorted[i].startTime))
+        if (Object.keys(timeArray).indexOf(timetableSorted[i].startTime) == -1) {
+            timeArray[timetableSorted[i].startTime] = [timetableSorted[i]]
         } else {
             console.log(timeArray[timeArray[Object.keys(timeArray).length].startTime])
-            timeArray[timeArray[Object.keys(timeArray).length].startTime] = timetableSorted[i]
+            timeArray[timetableSorted[i].startTime][timeArray[timetableSorted[i].startTime].length] = timetableSorted[i]
         }
     }
     console.log(timeArray)
+    console.log(timeArray[Object.keys(timeArray)[0]].lsnumber )
+    for(let i = 1; i < Object.keys(timeArray).length; i++) {
+        // hvis innholdet i forrige økt er lik innholdet i økt "i"
+        if (timeArray[Object.keys(timeArray)[i-1]] == timeArray[Object.keys(timeArray)[i]]) {
+            changeMultipleProps(timeArray[Object.keys(timeArray)[i-1]] , "endTime" , timeArray[Object.keys(timeArray)[i]][0].endTime)
+            delete timeArray[Object.keys(timeArray)[i]]
+            i--
+        }
+    }
+    console.log(timeArray)
+    console.log("new")
 }
+
+function changeMultipleProps(array, property, value) {
+    for (var i in array) {
+      array[i][property] = value
+    }
+ }
 
 //-------------------------------------------- MSG
 
@@ -476,7 +506,7 @@ client.on('message', msg => {
                         msg.channel.send("Klassen ble ikke funnet")
                     } else {
                         console.log(resultClass.id);
-                        untis.login()
+                        loginSchool(timer[schoolname].untisName)
                         .then(() => {
                             return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
                             .then(timeTable => {
