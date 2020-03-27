@@ -21,25 +21,6 @@ const telleTall = ["første", "andre", "tredje", "fjerde", "femte", "sjette", "s
 const weekdays = ["mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag"]
 const weekdaysSun = ["søndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag"]
 
-// Embed for .!help
-const helpEmbed = new Discord.MessageEmbed()
-    .setColor('#0099ff')
-    .setTitle('Kommandoer')
-    .setDescription('Her er noen kommandoer denne botten forstår. Merk at kommandoene som har med timeplanen å gjøre bare fungerer i skoletimer-kanalen.')
-    .addFields(
-        { name: `**${prefix}help**`, value: 'Tar deg hit' },
-        { name: `**${prefix}<lydfil>?**`, value:'Er lydfilen installert av admin, kan den spilles av med denne kommandoen.' },
-        { name: '\u200b', value: '\u200b' },
-        { name: `**${prefix}timeplan**`, value: 'Viser en enkel oversikt over når øktene starter og slutter' },
-        { name: `**${prefix}time**`, value: 'Sjekker hvilken økt det er og når den slutter. Tar utgangspunkt fra nåværende tidspunkt' },
-        { name: `**${prefix}time [HH:MM]**`, value: 'Sjekker hvilken økt det er og når den slutter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
-        { name: `**${prefix}time neste**`, value: 'Sjekker når neste økt starter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
-        { name: '\u200b', value: '\u200b' },
-        { name: `**${prefix}klasse [klassenavn]**`, value: 'Gir klassens fulle navn' },
-        { name: `**${prefix}klasse [klassenavn] timeplan**`, value: 'Gir klassens timeplan for idag.', inline: true },
-        { name: `**${prefix}klasse [klassenavn] timeplan [dag (eks. mandag)]**`, value: 'Gir klassens timeplan for den dagen. Gir du en dag som har vært denne uken, vil den ta samme dagen neste uke.', inline: true }
-    )
-    .setFooter('Hilsen Syver ;)');
 
 process.on('SIGINT', function () {
     console.log("Caught interrupt signal");
@@ -372,7 +353,34 @@ function changeMultipleProps(array, property, value) {
     }
 }
 
-//-------------------------------------------- MSG
+Date.prototype.addDays = function (days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+}
+
+
+//-------------------------------------------- MSG / STRINGS
+
+// Embed for .!help
+const helpEmbed = new Discord.MessageEmbed()
+    .setColor('#0099ff')
+    .setTitle('Kommandoer')
+    .setDescription('Her er noen kommandoer denne botten forstår. Merk at kommandoene som har med timeplanen å gjøre bare fungerer i skoletimer-kanalen.')
+    .addFields(
+        { name: `**${prefix}help**`, value: 'Tar deg hit' },
+        { name: `**${prefix}<lydfil>?**`, value: 'Er lydfilen installert av admin, kan den spilles av med denne kommandoen.' },
+        { name: '\u200b', value: '\u200b' },
+        { name: `**${prefix}timeplan**`, value: 'Viser en enkel oversikt over når øktene starter og slutter' },
+        { name: `**${prefix}time**`, value: 'Sjekker hvilken økt det er og når den slutter. Tar utgangspunkt fra nåværende tidspunkt' },
+        { name: `**${prefix}time [HH:MM]**`, value: 'Sjekker hvilken økt det er og når den slutter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
+        { name: `**${prefix}time neste**`, value: 'Sjekker når neste økt starter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
+        { name: '\u200b', value: '\u200b' },
+        { name: `**${prefix}klasse [klassenavn]**`, value: 'Gir klassens fulle navn' },
+        { name: `**${prefix}klasse [klassenavn] timeplan**`, value: 'Gir klassens timeplan for idag.', inline: true },
+        { name: `**${prefix}klasse [klassenavn] timeplan [dag (eks. mandag)]**`, value: 'Gir klassens timeplan for den dagen. Gir du en dag som har vært denne uken, vil den ta samme dagen neste uke.', inline: true }
+    )
+    .setFooter('Hilsen Syver ;)');
 
 var repeatedStrings =
 {
@@ -462,7 +470,7 @@ function msgCurrentOkt(msg, skole, when = getClock()) {
 
 //------------------------------------------------ON
 
-
+// ON READY. Når botten har logget inn og er online
 client.on('ready', async () => {
     try {
         throw new Error('Omg');
@@ -471,16 +479,17 @@ client.on('ready', async () => {
         setInterval(intervalFunc, 20000)
         client.user.setPresence({ activity: { name: `tikkelyder. "${prefix}"` }, status: 'available' })
             .catch(console.error);
-
-
     }
 });
 
+// ON MESSAGE. Når hvilken som helst melding sent i serveren
 client.on('message', msg => {
     if (!msg.content.startsWith(prefix) || msg.author.bot) return;
     const args = msg.content.slice(prefix.length).split(' ');
     const command = args.shift().toLowerCase();
     switch (command) {
+
+        // KOMMANDO SETCHANNEL. Lagrer kanalen som dette skrives i som "kanal" i timer-json og setter desc. TODO: FIKS NAVN VIL IKKE ENDRES
         case "setchannel":
             if (msg.member.roles.cache.some(role => role.name === 'Vaktmester')) {
                 console.log(msg.channel.id)
@@ -496,16 +505,20 @@ client.on('message', msg => {
                     timerJson[args[0]].kanal = msg.channel.id;
                     console.log(timerJson);
                     fs.writeFileSync("timer.json", JSON.stringify(timerJson));
-        
+
                     setchannel.setName(`${args[0]}-skoletimer`);
                     setchannel.setTopic(`Dette er skoletime-kanalen for ${timer[args].fullName}.`);
                 };
-        
+
             } else {
                 msg.channel.send("Du har ikke rettigheter nok til å bruke denne kommandoen")
             }
             break;
+
+
+        // KOMMANDO TIME. Bruker tidspunktet til å finne basic info om nåværennde økt, uten fag og webuntis
         case "time":
+
             var schoolname = msg.channel.name.split("-")[0]
             if (!args[0] || args[0] === `info`) {
                 if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
@@ -533,7 +546,11 @@ client.on('message', msg => {
 
             } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
             break;
+
+
+        // KOMMANDO KLASSE. Bruker klasse string (eks. 1std) til å finne timeplaner ved hjelp av Webuntis-API av TheNoim
         case "klasse":
+
             var schoolname = msg.channel.name.split("-")[0]
             if (args[0]) {
                 if (args[1] === `timeplan`) {
@@ -598,21 +615,37 @@ client.on('message', msg => {
                 msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.")
             }
             break;
+
+
+        // KOMMANDO HELP. Sender embed definert først i scriptet
         case "hjelp":
         case "help":
+
             msg.channel.send(helpEmbed);
             break;
+
+
+        // KOMMANDO TIMEPLAN. Gir basic info over økter. Uten fag og webuntis
         case "timeplan":
+
             if (!timer[msg.channel.name.split("-")[0]]) {
                 msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
             } else {
                 msg.channel.send(makeTimeplanEmbed(msg))
             };
             break;
+
+
+        // KOMMANDO CATO. Easter egg. Ubrukelig
         case "cato":
+
             msg.channel.send("Cato? CATO?! Neii")
             break;
+
+        // Rom for andre comparisons der case ikke duger
         default:
+
+            // KOMMANDO lydfil. Regex etter kommando som slutter med "?"
             if (isReady && /\w*\?/.test(command)) {
                 let match = /(\w*)\?/.exec(command)
                 console.log(match)
@@ -639,20 +672,10 @@ client.on('message', msg => {
                     isReady = true;
                 }
             };
-
     }
 })
 
-Date.prototype.addDays = function(days) {
-    var date = new Date(this.valueOf());
-    date.setDate(date.getDate() + days);
-    return date;
-}
-
-function arrayContains(needle, arrhaystack) {
-    return (arrhaystack.indexOf(needle) > -1);
-}
-
+// ON NEW MEMBER. Når nytt medlem blir med i serveren
 client.on('guildMemberAdd', member => {
     member.send("Hei! Jeg er fra Skolegården og jeg er en klokke, men nå skal jeg fortelle deg noe annet enn tiden!\n\nVaktmesteren registrerer medlemmer manuelt. For å kunne delta i samtaler og få elev-rollen må du **sende en melding** med Discord-taggen din og skolen du går på til **SYV1002** på Teams. Da kan han verifisere at du er deg. \n(Finner du han ikke ved søkelinjen, trykk \"Søk etter SYV1002\" og så \"Personer\". Der skal du kunne se Syver Stensholt.");
 });
