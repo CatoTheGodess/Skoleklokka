@@ -27,6 +27,13 @@
                 "longName": "Vg1 studiespesialisering",
                 "active": true,
                 "did": 199
+            },
+            "1elb": {
+                "id": 1891,
+                "name": "1ELB",
+                "longName": "Vg1 elektrofag",
+                "active": true,
+                "did": 21
             }
         },
         "untisName": "Heyerdahl"
@@ -64,6 +71,13 @@
                 "id": 313,
                 "name": "2AUA",
                 "longName": "2AUA",
+                "active": true,
+                "did": 5
+            },
+            "1elb": {
+                "id": 275,
+                "name": "1ELB",
+                "longName": "1ELB",
                 "active": true,
                 "did": 5
             }

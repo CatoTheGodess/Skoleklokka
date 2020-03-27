@@ -1,9 +1,12 @@
 const Discord = require('discord.js');
 const fs = require('fs')
+const WebUntisLib = require('webuntis');
 const client = new Discord.Client();
 const guild = new Discord.Guild();
 const chanman = new Discord.ChannelManager(client);
 var date = new Date();
+
+var untis;
 
 var auth = require('./auth.json');
 var timer = require('./timer.json');
@@ -38,10 +41,6 @@ const helpEmbed = new Discord.MessageEmbed()
     )
     .setFooter('Hilsen Syver ;)');
 
-const WebUntisLib = require('webuntis');
-
-var untis;
-
 process.on('SIGINT', function () {
     console.log("Caught interrupt signal");
 
@@ -67,7 +66,6 @@ function returnCurrentPeriod(skole, when = getClock()) {
             } else if (checkOkt !== timer[skole].timer.length - 1 && timeToMilli(when) > timeToMilli(timer[skole].timer[checkOkt].slutt) && timeToMilli(when) < timeToMilli(timer[skole].timer[checkOkt + 1].start)) {
                 // tidspunktet er etter aktuell time og før timen etter, hvis ikke aktuell time er siste time
                 return ["pausefør", timer[skole].timer[checkOkt + 1], checkOkt + 1]
-                break
             } else {
                 checkOkt++;
             }
@@ -145,10 +143,16 @@ function howLongSinceUntil(sinceUntilThis, stringReturn = false, allowSince = fa
 
 
         } else if (depth === 3) {
-            if (!(timeArray[2] === 1)) { timeArray[2] = timeArray[2] + " sekunder" } else { timeArray[2] = timeArray[2] + " sekund" }
-            if (result.split(" ")[1] === "siden") { return `for ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]} siden` }
-            else { return `om ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]}` }
-
+            if (!(timeArray[2] === 1)) {
+                timeArray[2] = timeArray[2] + " sekunder"
+            } else {
+                timeArray[2] = timeArray[2] + " sekund"
+            }
+            if (result.split(" ")[1] === "siden") {
+                return `for ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]} siden`
+            } else {
+                return `om ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]}`
+            }
         } else {
             console.error("howLongSinceUntil only takes depth 2 or 3 at the moment!");
         }
@@ -170,8 +174,6 @@ function getClock() {
     seconds = (seconds < 10) ? "0" + seconds : seconds;
 
     return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
-
-
 }
 
 function objectLength(object) {
@@ -225,7 +227,6 @@ function untisTimeParse(time) {
         match[1] = "0" + match[1]
     }
     return (match[1] + ":" + match[2])
-
 }
 
 var lastNoti = { "school": "", "lastTime": "" }
@@ -334,7 +335,6 @@ function timetableToEmbed(timetable, forClass, givenDate) {
         } else {
             timeArray[timetableSorted[i].startTime].push(timetableSorted[i])
         }
-
     }
 
     for (let i = 1; i < Object.keys(timeArray).length; i++) {
@@ -356,7 +356,6 @@ function timetableToEmbed(timetable, forClass, givenDate) {
         for (let s in timeArray[Object.keys(timeArray)[i]]) {
             let subjectNameInfo = timeArray[Object.keys(timeArray)[i]][s].su[0].longname
             fieldsToBeAdded.push(subjectNameInfo)
-
             // every subject in same period ^
         }
         console.log(givenDate)
@@ -481,153 +480,167 @@ client.on('message', msg => {
     if (!msg.content.startsWith(prefix) || msg.author.bot) return;
     const args = msg.content.slice(prefix.length).split(' ');
     const command = args.shift().toLowerCase();
-    if (command === `setchannel` && msg.member.roles.cache.some(role => role.name === 'Vaktmester')) {
-        console.log(msg.channel.id)
-        const setchannel = msg.channel;
-        if (!args[0]) {
-            msg.channel.send("Du må skrive forkortelsen til skolen du vil binde til kanalen. (eks.)");
-        } else {
-            msg.reply(`Setter denne kanalen (${msg.channel.id}) som kanal for ${args[0]}!`);
-            var timerContent = fs.readFileSync("timer.json");
-            var timerJson = JSON.parse(timerContent);
-            console.log(timerJson);
-            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', 'fullName': '' }; };
-            timerJson[args[0]].kanal = msg.channel.id;
-            console.log(timerJson);
-            fs.writeFileSync("timer.json", JSON.stringify(timerJson));
-
-            setchannel.setName(`${args[0]}-skoletimer`);
-            setchannel.setTopic(`Dette er skoletime-kanalen for ${timer[args].fullName}.`);
-        };
-
-    } else if (command === `time`) {
-        var schoolname = msg.channel.name.split("-")[0]
-        if (!args[0] || args[0] === `info`) {
-            if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
-                msgCurrentOkt(msg, schoolname);
+    switch (command) {
+        case "setchannel":
+            if (msg.member.roles.cache.some(role => role.name === 'Vaktmester')) {
+                console.log(msg.channel.id)
+                const setchannel = msg.channel;
+                if (!args[0]) {
+                    msg.channel.send("Du må skrive forkortelsen til skolen du vil binde til kanalen. (eks.)");
+                } else {
+                    msg.reply(`Setter denne kanalen (${msg.channel.id}) som kanal for ${args[0]}!`);
+                    var timerContent = fs.readFileSync("timer.json");
+                    var timerJson = JSON.parse(timerContent);
+                    console.log(timerJson);
+                    if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', 'fullName': '' }; };
+                    timerJson[args[0]].kanal = msg.channel.id;
+                    console.log(timerJson);
+                    fs.writeFileSync("timer.json", JSON.stringify(timerJson));
+        
+                    setchannel.setName(`${args[0]}-skoletimer`);
+                    setchannel.setTopic(`Dette er skoletime-kanalen for ${timer[args].fullName}.`);
+                };
+        
             } else {
-                msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-            };
-
-        } else if (args[0] === `neste`) {
-
-            if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
-                msgNextOkt(msg, schoolname);
-            } else {
-                msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-            };
-
-        } else if (/[0-2]\d:[0-6]\d/.test(args[0])) {
-            if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
-                msg.channel.send(`Bruker tidspunkt ${args[0]}.`);
-                msgNextOkt(msg, schoolname, args[0]);
-            } else {
-                msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-            };
-
-
-        } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
-    } else if (command === `klasse`) {
-        var schoolname = msg.channel.name.split("-")[0]
-        if (args[0]) {
-            if (args[1] === `timeplan`) {
-                findAndSaveClasses(args[0], schoolname).then(resultClass => {
-                    if (resultClass == "not found") {
-                        msg.channel.send("Klassen ble ikke funnet")
-                    } else {
-                        let givenDate = new Date();
-                        if (args[2]) {
-                            if (weekdays.indexOf(args[2]) < date.getDay()) {
-                                let currentDay;
-                                if (date.getDay() == 0) {
-                                    currentDay = 7
-                                } else {
-                                    currentDay = date.getDay() - 1
-                                }
-                                let difference = weekdays.indexOf(args[2]) + 7 - currentDay
-                                console.log(difference)
-                                console.log(weekdays.indexOf(args[2]) + "7" + "-" + currentDay)
-                                givenDate = givenDate.addDays(difference)
-                                console.log(givenDate)
-                            } else {
-                                let difference = weekdays.indexOf(args[2]) - currentDay
-                                console.log(difference)
-                                givenDate = givenDate.addDays(difference)
-                                console.log(givenDate)
-                            }
-                            loginSchool(timer[schoolname].untisName)
-                                .then(() => {
-                                    return untis.getTimetableFor(givenDate, resultClass.id, WebUntisLib.TYPES.CLASS)
-                                        .then(timeTable => {
-                                            console.log(timeTable)
-                                            msg.channel.send(timetableToEmbed(timeTable, resultClass, givenDate));
-                                        })
-                                }).then(untis.logout())
-                        } else {
-                            console.log(resultClass.id);
-                            loginSchool(timer[schoolname].untisName)
-                                .then(() => {
-                                    return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
-                                        .then(timeTable => {
-                                            console.log(timeTable)
-                                            msg.channel.send(timetableToEmbed(timeTable, resultClass, date));
-                                        })
-                                }).then(untis.logout())
-                        }
-                    }
-                })
-            } else {
-                findAndSaveClasses(args[0], schoolname).then(resultClass => {
-                    if (resultClass == "not found") {
-                        msg.channel.send("Klassen ble ikke funnet")
-                    } else {
-                        let embed = new Discord.MessageEmbed()
-                            .setTitle(resultClass.longName)
-                        msg.channel.send(embed)
-                    }
-                })
+                msg.channel.send("Du har ikke rettigheter nok til å bruke denne kommandoen")
             }
+            break;
+        case "time":
+            var schoolname = msg.channel.name.split("-")[0]
+            if (!args[0] || args[0] === `info`) {
+                if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
+                    msgCurrentOkt(msg, schoolname);
+                } else {
+                    msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+                };
 
-        } else {
-            msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.")
-        }
-    } else if (command === `help` || command === `hjelp`) {
-        msg.channel.send(helpEmbed);
-    } else if (command === `timeplan`) {
-        if (!timer[msg.channel.name.split("-")[0]]) {
-            msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
-        } else {
-            msg.channel.send(makeTimeplanEmbed(msg))
-        };
-    } else if (command === "cato") {
-        msg.channel.send("Cato? CATO?! Neii")
-    } else if (isReady && /\w*\?/.test(command)) {
-        let match = /(\w*)\?/.exec(command)
-        console.log(match)
-        console.log(match[1])
-        isReady = false;
-        var voiceChannel = msg.member.voice.channel;
-        let files = fs.readdirSync('./src/')
-        console.log(files)
-        if (voiceChannel == null) {
-            msg.channel.send("Du må være i en voice-kanal for å kunne spille av lydfiler.")
-        } else if (files.indexOf(match[1] + ".mp3") > -1) {
-            msg.delete()
-            console.log("kjskld")
-            let ender = () => {
-                msg.member.voice.channel.leave();
+            } else if (args[0] === `neste`) {
+
+                if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
+                    msgNextOkt(msg, schoolname);
+                } else {
+                    msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+                };
+
+            } else if (/[0-2]\d:[0-6]\d/.test(args[0])) {
+                if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
+                    msg.channel.send(`Bruker tidspunkt ${args[0]}.`);
+                    msgNextOkt(msg, schoolname, args[0]);
+                } else {
+                    msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+                };
+
+
+            } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
+            break;
+        case "klasse":
+            var schoolname = msg.channel.name.split("-")[0]
+            if (args[0]) {
+                if (args[1] === `timeplan`) {
+                    findAndSaveClasses(args[0], schoolname).then(resultClass => {
+                        if (resultClass == "not found") {
+                            msg.channel.send("Klassen ble ikke funnet")
+                        } else {
+                            let givenDate = new Date();
+                            if (args[2]) {
+                                if (weekdays.indexOf(args[2]) < date.getDay()) {
+                                    let currentDay;
+                                    if (date.getDay() == 0) {
+                                        currentDay = 7
+                                    } else {
+                                        currentDay = date.getDay() - 1
+                                    }
+                                    let difference = weekdays.indexOf(args[2]) + 7 - currentDay
+                                    console.log(difference)
+                                    console.log(weekdays.indexOf(args[2]) + "7" + "-" + currentDay)
+                                    givenDate = givenDate.addDays(difference)
+                                    console.log(givenDate)
+                                } else {
+                                    let difference = weekdays.indexOf(args[2]) - currentDay
+                                    console.log(difference)
+                                    givenDate = givenDate.addDays(difference)
+                                    console.log(givenDate)
+                                }
+                                loginSchool(timer[schoolname].untisName)
+                                    .then(() => {
+                                        return untis.getTimetableFor(givenDate, resultClass.id, WebUntisLib.TYPES.CLASS)
+                                            .then(timeTable => {
+                                                console.log(timeTable)
+                                                msg.channel.send(timetableToEmbed(timeTable, resultClass, givenDate));
+                                            })
+                                    }).then(untis.logout())
+                            } else {
+                                console.log(resultClass.id);
+                                loginSchool(timer[schoolname].untisName)
+                                    .then(() => {
+                                        return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
+                                            .then(timeTable => {
+                                                console.log(timeTable)
+                                                msg.channel.send(timetableToEmbed(timeTable, resultClass, date));
+                                            })
+                                    }).then(untis.logout())
+                            }
+                        }
+                    })
+                } else {
+                    findAndSaveClasses(args[0], schoolname).then(resultClass => {
+                        if (resultClass == "not found") {
+                            msg.channel.send("Klassen ble ikke funnet")
+                        } else {
+                            let embed = new Discord.MessageEmbed()
+                                .setTitle(resultClass.longName)
+                            msg.channel.send(embed)
+                        }
+                    })
+                }
+
+            } else {
+                msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.")
+            }
+            break;
+        case "hjelp":
+        case "help":
+            msg.channel.send(helpEmbed);
+            break;
+        case "timeplan":
+            if (!timer[msg.channel.name.split("-")[0]]) {
+                msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
+            } else {
+                msg.channel.send(makeTimeplanEmbed(msg))
             };
-            voiceChannel.join().then(connection => {
-                const dispatcher = connection.play(`./src/${match[1]}.mp3`)
-                dispatcher.setVolume(0.5)
-                dispatcher.on("finish", ender);
-            }).catch(err => console.log(err));
-            isReady = true;
-        } else {
-            msg.channel.send("Fant ikke den filen.")
-            isReady = true;
-        }
-    };
+            break;
+        case "cato":
+            msg.channel.send("Cato? CATO?! Neii")
+            break;
+        default:
+            if (isReady && /\w*\?/.test(command)) {
+                let match = /(\w*)\?/.exec(command)
+                console.log(match)
+                console.log(match[1])
+                isReady = false;
+                var voiceChannel = msg.member.voice.channel;
+                let files = fs.readdirSync('./src/')
+                console.log(files)
+                if (voiceChannel == null) {
+                    msg.channel.send("Du må være i en voice-kanal for å kunne spille av lydfiler.")
+                } else if (files.indexOf(match[1] + ".mp3") > -1) {
+                    msg.delete()
+                    let ender = () => {
+                        msg.member.voice.channel.leave();
+                    };
+                    voiceChannel.join().then(connection => {
+                        const dispatcher = connection.play(`./src/${match[1]}.mp3`)
+                        dispatcher.setVolume(0.5)
+                        dispatcher.on("finish", ender);
+                    }).catch(err => console.log(err));
+                    isReady = true;
+                } else {
+                    msg.channel.send("Fant ikke den filen.")
+                    isReady = true;
+                }
+            };
+
+    }
 })
 
 Date.prototype.addDays = function(days) {
