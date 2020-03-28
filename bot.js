@@ -210,7 +210,7 @@ function untisTimeParse(time) {
     return (match[1] + ":" + match[2])
 }
 
-var lastNoti = { "school": "", "lastTime": "" }
+var lastNoti = {};
 
 //Sjekke etter timer som starter om 5 min
 function intervalFunc() {
@@ -223,12 +223,13 @@ function intervalFunc() {
             console.log("--- " + getNameByIndex(timer, skolecount) + " ---");
             for (let i = 0; i < timer[getNameByIndex(timer, skolecount)].timer.length; i++) {
                 // Notify 5-6 min before event
-                if (timeToMilli(getClock()) >= (timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start) - 360000) && timeToMilli(getClock()) <= (timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start) - 300000) && !(timeToMilli(getClock()) - lastNoti.lastTime <= 300000 && getNameByIndex(timer, skolecount) === "thvs")) {
+                let milliCurrentStart = timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start)
+                let milliClock = timeToMilli(getClock())
+                if (milliClock >= (milliCurrentStart - 360000) && milliClock <= (milliCurrentStart - 300000) && !(milliClock - lastNoti[getNameByIndex(timer, skolecount)] <= 300000)) {
                     client.channels.fetch(timer[getNameByIndex(timer, skolecount)].kanal)
                         .then(channel => channel.send("Neste økt starter om 5 min!"))
                         .catch(console.error);
-                    lastNoti.lastTime = timeToMilli(getClock());
-                    lastNoti.school = getNameByIndex(timer, skolecount);
+                    lastNoti[getNameByIndex(timer, skolecount)] = timeToMilli(getClock());
                     console.log(`class found ${i} sent notification`)
                 }
             }
