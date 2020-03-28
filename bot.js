@@ -185,7 +185,6 @@ function milliToTime(duration, returnString = false) {
         hours = (hours < 10) ? "0" + hours : hours;
         minutes = (minutes < 10) ? "0" + minutes : minutes;
         seconds = (seconds < 10) ? "0" + seconds : seconds;
-        console.log(hours + ":" + minutes + ":" + seconds + "." + milliseconds)
         return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
     } else {
         if (hours > 1) {
@@ -268,7 +267,6 @@ async function findAndSaveClasses(nameKey, school) {
                 return untis.getClasses();
             })
         var myArray = await untisGetclasses
-        console.log(myArray)
         untis.logout()
 
         let resultSearch;
@@ -340,7 +338,6 @@ function timetableToEmbed(timetable, forClass, givenDate) {
             fieldsToBeAdded.push(subjectNameInfo)
             // every subject in same period ^
         }
-        console.log(givenDate)
         untisTimeParse(Object.keys(timeArray)[i])
         timetableEmbed.addField("\n" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].startTime) + "-" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].endTime), fieldsToBeAdded.join('\n'))
         timetableEmbed.setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()}`)
@@ -369,17 +366,17 @@ const helpEmbed = new Discord.MessageEmbed()
     .setTitle('Kommandoer')
     .setDescription('Her er noen kommandoer denne botten forstår. Merk at kommandoene som har med timeplanen å gjøre bare fungerer i skoletimer-kanalen.')
     .addFields(
-        { name: `**${prefix}help**`, value: 'Tar deg hit' },
-        { name: `**${prefix}<lydfil>?**`, value: 'Er lydfilen installert av admin, kan den spilles av med denne kommandoen.' },
+        { name: `\`${prefix}help\``, value: 'Tar deg hit', inline: true},
+        { name: `\`${prefix}<lydfil>?\``, value: 'Er lydfilen installert av admin, kan den spilles av med denne kommandoen.', inline: true },
         { name: '\u200b', value: '\u200b' },
-        { name: `**${prefix}timeplan**`, value: 'Viser en enkel oversikt over når øktene starter og slutter' },
-        { name: `**${prefix}time**`, value: 'Sjekker hvilken økt det er og når den slutter. Tar utgangspunkt fra nåværende tidspunkt' },
-        { name: `**${prefix}time [HH:MM]**`, value: 'Sjekker hvilken økt det er og når den slutter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
-        { name: `**${prefix}time neste**`, value: 'Sjekker når neste økt starter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
-        { name: '\u200b', value: '\u200b' },
-        { name: `**${prefix}klasse [klassenavn]**`, value: 'Gir klassens fulle navn' },
-        { name: `**${prefix}klasse [klassenavn] timeplan**`, value: 'Gir klassens timeplan for idag.', inline: true },
-        { name: `**${prefix}klasse [klassenavn] timeplan [dag (eks. mandag)]**`, value: 'Gir klassens timeplan for den dagen. Gir du en dag som har vært denne uken, vil den ta samme dagen neste uke.', inline: true }
+        { name: `\`${prefix}timeplan\``, value: 'Viser en enkel oversikt over når øktene starter og slutter'},
+        { name: `\`${prefix}time\``, value: 'Sjekker hvilken økt det er og når den slutter. Tar utgangspunkt fra nåværende tidspunkt', inline: true },
+        { name: `\`${prefix}time [HH:MM]\``, value: 'Sjekker hvilken økt det er og når den slutter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
+        { name: `\`${prefix}time neste\``, value: 'Sjekker når neste økt starter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
+        { name: '\u200b', value: '`WebUntis-kommandoer (timeplan med fag)`' },
+        { name: `*klasse-kommandoene fungerer bare for skoler som bruker Untis. Dette er for det meste Vestfold-skolene.*\n\`${prefix}klasse [klasse]\``, value: '(eks: .!klasse 1sta)\nGir klassens fulle navn.' },
+        { name: `\`${prefix}klasse [klasse] timeplan\``, value: '(eks: .!klasse 1sta timeplan)\nGir klassens timeplan for idag.', inline: true },
+        { name: `\`${prefix}klasse [kasse] timeplan [dag]\``, value: '(eks: .!klasse 1sta timeplan mandag)\nGir klassens timeplan for den dagen. Gir du en dag som har vært denne uken, vil den ta samme dagen neste uke.', inline: true }
     )
     .setFooter('Hilsen Syver ;)');
 
@@ -553,7 +550,9 @@ client.on('message', msg => {
         case "klasse":
 
             var schoolname = msg.channel.name.split("-")[0]
-            if (args[0]) {
+            if (!timer[schoolname].untisName) {
+                msg.channel.send("Denne skolen bruker ikke WebUntis, som er der jeg henter timer fra. De andre kommandoene som ikke innebærer å vise fag vil fortsatt fungere.")
+            } else if (args[0]) {
                 if (args[1] === `timeplan`) {
                     findAndSaveClasses(args[0], schoolname).then(resultClass => {
                         if (resultClass == "not found") {
