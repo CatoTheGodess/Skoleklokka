@@ -2,8 +2,6 @@ const Discord = require('discord.js');
 const fs = require('fs')
 const WebUntisLib = require('webuntis');
 const client = new Discord.Client();
-const guild = new Discord.Guild();
-const chanman = new Discord.ChannelManager(client);
 var date = new Date();
 
 var untis;
@@ -303,6 +301,9 @@ async function loginSchool(school) {
 }
 
 function timetableToEmbed(timetable, forClass, givenDate) {
+    if (!timetable[0]) {
+        return new Discord.MessageEmbed().setTitle("Timeplanen er tom! :)")
+    }
 
     let timetableSorted = timetable.sort((a, b) => parseFloat(a.startTime) - parseFloat(b.startTime));
     let firstTime = timetableSorted[0].startTime
@@ -351,6 +352,19 @@ function changeMultipleProps(array, property, value) {
     }
 }
 
+async function changeReactable(sentMsg, rClass, date) {
+    let chanid = sentMsg.channel.id;
+    if (currentReactable[chanid]) {
+        msg.channel.fetch(currentReactable[chanid]).then(gotMessage => gotMessage.reactions.removeAll())
+    }
+    await sentMsg.react('⬅️')
+    await sentMsg.react('➡️')
+    currentReactable[chanid] = { msgid: "", class: "" }
+    currentReactable[chanid].msgid = sentMsg.id
+    currentReactable[chanid].class = rClass
+    currentReactable[chanid].dateDisplayed = date
+}
+
 Date.prototype.addDays = function (days) {
     var date = new Date(this.valueOf());
     date.setDate(date.getDate() + days);
@@ -366,10 +380,10 @@ const helpEmbed = new Discord.MessageEmbed()
     .setTitle('Kommandoer')
     .setDescription('Her er noen kommandoer denne botten forstår. Merk at kommandoene som har med timeplanen å gjøre bare fungerer i skoletimer-kanalen.')
     .addFields(
-        { name: `\`${prefix}help\``, value: 'Tar deg hit', inline: true},
+        { name: `\`${prefix}help\``, value: 'Tar deg hit', inline: true },
         { name: `\`${prefix}<lydfil>?\``, value: 'Er lydfilen installert av admin, kan den spilles av med denne kommandoen.', inline: true },
         { name: '\u200b', value: '\u200b' },
-        { name: `\`${prefix}timeplan\``, value: 'Viser en enkel oversikt over når øktene starter og slutter'},
+        { name: `\`${prefix}timeplan\``, value: 'Viser en enkel oversikt over når øktene starter og slutter' },
         { name: `\`${prefix}time\``, value: 'Sjekker hvilken økt det er og når den slutter. Tar utgangspunkt fra nåværende tidspunkt', inline: true },
         { name: `\`${prefix}time [HH:MM]\``, value: 'Sjekker hvilken økt det er og når den slutter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
         { name: `\`${prefix}time neste\``, value: 'Sjekker når neste økt starter. Botten vil ta utgangspunkt til det tidspunktet som er gitt', inline: true },
@@ -548,7 +562,6 @@ client.on('message', msg => {
 
         // KOMMANDO KLASSE. Bruker klasse string (eks. 1std) til å finne timeplaner ved hjelp av Webuntis-API av TheNoim
         case "klasse":
-
             var schoolname = msg.channel.name.split("-")[0]
             if (!timer[schoolname].untisName) {
                 msg.channel.send("Denne skolen bruker ikke WebUntis, som er der jeg henter timer fra. De andre kommandoene som ikke innebærer å vise fag vil fortsatt fungere.")
@@ -560,40 +573,44 @@ client.on('message', msg => {
                         } else {
                             let givenDate = new Date();
                             if (args[2]) {
+                                let currentDay;
+                                if (date.getDay() == 0) {
+                                    currentDay = 7
+                                } else {
+                                    currentDay = date.getDay() - 1
+                                }
                                 if (weekdays.indexOf(args[2]) < date.getDay()) {
-                                    let currentDay;
-                                    if (date.getDay() == 0) {
-                                        currentDay = 7
-                                    } else {
-                                        currentDay = date.getDay() - 1
-                                    }
                                     let difference = weekdays.indexOf(args[2]) + 7 - currentDay
-                                    console.log(difference)
-                                    console.log(weekdays.indexOf(args[2]) + "7" + "-" + currentDay)
                                     givenDate = givenDate.addDays(difference)
-                                    console.log(givenDate)
                                 } else {
                                     let difference = weekdays.indexOf(args[2]) - currentDay
-                                    console.log(difference)
                                     givenDate = givenDate.addDays(difference)
-                                    console.log(givenDate)
                                 }
+                                console.log(resultClass);
                                 loginSchool(timer[schoolname].untisName)
                                     .then(() => {
+                                        console.log(givenDate + " id: " + resultClass.id)
                                         return untis.getTimetableFor(givenDate, resultClass.id, WebUntisLib.TYPES.CLASS)
                                             .then(timeTable => {
                                                 console.log(timeTable)
-                                                msg.channel.send(timetableToEmbed(timeTable, resultClass, givenDate));
+                                                let ttembed = timetableToEmbed(timeTable, resultClass, givenDate)
+                                                msg.channel.send(ttembed)
+                                                    .then(sentMsg => {
+                                                        if (ttembed.title != 'Timeplanen er tom! :)') {
+                                                            changeReactable(sentMsg, resultClass, givenDate)
+                                                        }
+                                                    })
                                             })
                                     }).then(untis.logout())
                             } else {
-                                console.log(resultClass.id);
+                                console.log(resultClass);
                                 loginSchool(timer[schoolname].untisName)
                                     .then(() => {
                                         return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
                                             .then(timeTable => {
                                                 console.log(timeTable)
-                                                msg.channel.send(timetableToEmbed(timeTable, resultClass, date));
+                                                msg.channel.send(timetableToEmbed(timeTable, resultClass, date))
+                                                    .then(sentMsg => changeReactable(sentMsg, resultClass, date))
                                             })
                                     }).then(untis.logout())
                             }
@@ -674,6 +691,43 @@ client.on('message', msg => {
             };
     }
 })
+
+var currentReactable = {};
+
+client.on('messageReactionAdd', async (reaction, user) => {
+    // When we receive a reaction we check if the reaction is partial or not
+    if (reaction.partial) {
+        // If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
+        try {
+            await reaction.fetch();
+        } catch (error) {
+            console.log('Something went wrong when fetching the message: ', error);
+            // Return as `reaction.message.author` may be undefined/null
+            return;
+        }
+    }
+    console.log("users:::")
+    console.log(reaction.users.cache)
+    if (reaction.message.author.bot && currentReactable[reaction.message.channel.id]) {
+
+        loginSchool(timer[reaction.message.channel.name.split("-")[0]].untisName)
+            .then(() => {
+                return untis.getTimetableForToday(currentReactable[reaction.message.channel.id].class.id, WebUntisLib.TYPES.CLASS)
+                    .then(timeTable => {
+                        console.log(timeTable)
+                        let dateAfterLorR = currentReactable[reaction.message.channel.id].dateDisplayed
+                        console.log(reaction.emoji)
+                        if (reaction.emoji === '⬅️') {
+                            dateAfterLorR.setDate(dateAfterLorR.getDay() - 1)
+                            reaction.message.edit(timetableToEmbed(timeTable, currentReactable[reaction.message.channel.id].class, dateAfterLorR))
+                        } else if (reaction.emoji === '➡️') {
+                            dateAfterLorR.setDate(dateAfterLorR.getDay() + 1)
+                            reaction.message.edit(timetableToEmbed(timeTable, currentReactable[reaction.message.channel.id].class, dateAfterLorR))
+                        }
+                    })
+            }).then(untis.logout())
+    }
+});
 
 // ON NEW MEMBER. Når nytt medlem blir med i serveren
 client.on('guildMemberAdd', member => {

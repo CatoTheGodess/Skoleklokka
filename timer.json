@@ -111,6 +111,12 @@
                 "name": "1STb",
                 "longName": "1STb",
                 "active": true
+            },
+            "1sta": {
+                "id": 235,
+                "name": "1STa",
+                "longName": "1STa",
+                "active": true
             }
         },
         "untisName": "Re vgs"
