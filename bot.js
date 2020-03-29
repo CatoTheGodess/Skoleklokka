@@ -2,7 +2,7 @@ const Discord = require('discord.js');
 const fs = require('fs')
 const WebUntisLib = require('webuntis');
 const client = new Discord.Client();
-var date = new Date();
+const date = new Date();
 
 var untis;
 
@@ -142,17 +142,9 @@ function howLongSinceUntil(sinceUntilThis, stringReturn = false, allowSince = fa
 }
 
 function getClock() {
-    date = new Date();
-    let milliseconds = date.getMilliseconds(),
-        seconds = date.getSeconds(),
-        minutes = date.getMinutes(),
-        hours = date.getHours()
+    let msClock = Date.now() - date.setHours(0, 0, 0, 0)
 
-    hours = (hours < 10) ? "0" + hours : hours;
-    minutes = (minutes < 10) ? "0" + minutes : minutes;
-    seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-    return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
+    return (milliToTime(msClock));
 }
 
 function objectLength(object) {
@@ -165,13 +157,9 @@ function getNameByIndex(obj, val) {
 
 function timeToMilli(handmstring) {
     let arrayTime = handmstring.split(":");
-    if (arrayTime.length === 2) {
-        return (arrayTime[0] * 3600000 + arrayTime[1] * 60000);
-    } else if (arrayTime.length > 2) {
-        return (arrayTime[0] * 3600000 + arrayTime[1] * 60000 + arrayTime[2] * 1000);
-    }
 
-} 6 + milliToTime(2000, false)
+    return (date.setHours(arrayTime[0], arrayTime[1], 0, 0) - date.setHours(0, 0, 0, 0));
+}
 
 function milliToTime(duration, returnString = false) {
     let milliseconds = parseInt((duration % 1000) / 100),
@@ -423,7 +411,7 @@ function msgNextOkt(msg, skole, when = getClock()) {
             break;
         case "etterSkole":
             if (date.getDay() == 5) {
-                msg.channel.send(`Nå er helg! Neste økt er ikke før til mandag kl. ${timer[skole].timer[0].start}. Kos deg!`);
+                msg.channel.send(`Nå er helg! Neste økt er ikke før mandag kl. ${timer[skole].timer[0].start}. Kos deg!`);
             } else {
                 msg.channel.send(`${repeatedStrings.afterS} Neste økt er ${telleTall[0]} økt i morgen kl. ${timer[skole].timer[0].start}. (${howLongSinceUntil(timer[skole].timer[0].start, true, false, when)})`);
             }
@@ -435,7 +423,7 @@ function msgNextOkt(msg, skole, when = getClock()) {
             msg.channel.send(`${repeatedStrings.break} Neste økt er ${telleTall[currentPeriod[2]]} økt kl. ${timer[skole].timer[currentPeriod[2]].start} (${howLongSinceUntil(timer[skole].timer[currentPeriod[2]].start, true, false, when)})`)
             break;
         case "weekend":
-            msg.channel.send(`${repeatedStrings.weekend} Neste økt er ${telleTall[0]} økt til mandag kl. ${timer[skole].timer[0].start}.`)
+            msg.channel.send(`${repeatedStrings.weekend} Neste økt er ${telleTall[0]} økt mandag kl. ${timer[skole].timer[0].start}.`)
             break;
         default:
             msg.channel.send("Noe gikk galt! Det kan hende timene ikke er satt opp for denne skolen. Kontakt admin.");
