@@ -2,7 +2,7 @@ const Discord = require('discord.js');
 const fs = require('fs')
 const WebUntisLib = require('webuntis');
 const client = new Discord.Client();
-const date = new Date();
+var date = new Date();
 
 var untis;
 
