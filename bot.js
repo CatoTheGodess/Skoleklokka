@@ -290,7 +290,7 @@ async function loginSchool(school) {
 
 function timetableToEmbed(timetable, forClass, givenDate) {
     if (!timetable[0]) {
-        return new Discord.MessageEmbed().setTitle("Timeplanen er tom! :)")
+        return new Discord.MessageEmbed().setTitle("Timeplanen er tom! :)").setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()}`)
     }
 
     let timetableSorted = timetable.sort((a, b) => parseFloat(a.startTime) - parseFloat(b.startTime));
@@ -329,7 +329,7 @@ function timetableToEmbed(timetable, forClass, givenDate) {
         }
         untisTimeParse(Object.keys(timeArray)[i])
         timetableEmbed.addField("\n" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].startTime) + "-" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].endTime), fieldsToBeAdded.join('\n'))
-        timetableEmbed.setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()}`)
+        timetableEmbed.setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()} - updated ${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
     }
     return timetableEmbed
 }
@@ -340,23 +340,23 @@ function changeMultipleProps(array, property, value) {
     }
 }
 
-async function changeReactable(sentMsg, rClass, date) {
+async function changeReactable(sentMsg, rClass, dateReacc) {
     let chanid = sentMsg.channel.id;
     if (currentReactable[chanid]) {
-        msg.channel.fetch(currentReactable[chanid]).then(gotMessage => gotMessage.reactions.removeAll())
+        sentMsg.channel.messages.fetch(currentReactable[chanid].msgid).then(gotMessage => gotMessage.delete())
     }
     await sentMsg.react('⬅️')
     await sentMsg.react('➡️')
     currentReactable[chanid] = { msgid: "", class: "" }
     currentReactable[chanid].msgid = sentMsg.id
     currentReactable[chanid].class = rClass
-    currentReactable[chanid].dateDisplayed = date
+    currentReactable[chanid].dateDisplayed = dateReacc
 }
 
 Date.prototype.addDays = function (days) {
-    var date = new Date(this.valueOf());
-    date.setDate(date.getDate() + days);
-    return date;
+    let dodate = new Date(this.valueOf());
+    dodate.setDate(date.getDate() + days);
+    return dodate;
 }
 
 
@@ -694,24 +694,21 @@ client.on('messageReactionAdd', async (reaction, user) => {
             return;
         }
     }
-    console.log("users:::")
-    console.log(reaction.users.cache)
-    if (reaction.message.author.bot && currentReactable[reaction.message.channel.id]) {
 
+    if (reaction.message.author.bot && currentReactable[reaction.message.channel.id] && !user.bot) {
+
+        let dateAfterLorR = currentReactable[reaction.message.channel.id].dateDisplayed
+        if (reaction.emoji.name === '⬅️') {
+            dateAfterLorR.setDate(dateAfterLorR.getDate() - 1)
+        } else if (reaction.emoji.name === '➡️') {
+            dateAfterLorR.setDate(dateAfterLorR.getDate() + 1)
+        }
         loginSchool(timer[reaction.message.channel.name.split("-")[0]].untisName)
             .then(() => {
-                return untis.getTimetableForToday(currentReactable[reaction.message.channel.id].class.id, WebUntisLib.TYPES.CLASS)
+                return untis.getTimetableFor(dateAfterLorR, currentReactable[reaction.message.channel.id].class.id, WebUntisLib.TYPES.CLASS)
                     .then(timeTable => {
-                        console.log(timeTable)
-                        let dateAfterLorR = currentReactable[reaction.message.channel.id].dateDisplayed
-                        console.log(reaction.emoji)
-                        if (reaction.emoji === '⬅️') {
-                            dateAfterLorR.setDate(dateAfterLorR.getDay() - 1)
-                            reaction.message.edit(timetableToEmbed(timeTable, currentReactable[reaction.message.channel.id].class, dateAfterLorR))
-                        } else if (reaction.emoji === '➡️') {
-                            dateAfterLorR.setDate(dateAfterLorR.getDay() + 1)
-                            reaction.message.edit(timetableToEmbed(timeTable, currentReactable[reaction.message.channel.id].class, dateAfterLorR))
-                        }
+                        reaction.message.edit(timetableToEmbed(timeTable, currentReactable[reaction.message.channel.id].class, dateAfterLorR))
+                        reaction.users.remove(user.id)
                     })
             }).then(untis.logout())
     }
