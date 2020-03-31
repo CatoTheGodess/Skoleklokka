@@ -100,7 +100,7 @@ function howLongSinceUntil(sinceUntilThis, stringReturn = false, allowSince = fa
                 if (timeArr[0] == 00 && timeArr[1] == 00) return `nå`;
                 else if (timeArr[0] == 00) return `om ${timeArray[1]}`;
                 else return `om ${timeArray[0]} og ${timeArray[1]}`;
-            };
+            }
         } else if (depth === 3) {
             if (!(timeArray[2] === 1)) timeArray[2] = timeArray[2] + " sekunder";
             else timeArray[2] = timeArray[2] + " sekund";
@@ -108,23 +108,23 @@ function howLongSinceUntil(sinceUntilThis, stringReturn = false, allowSince = fa
             else return `om ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]}`;
         } else console.error("howLongSinceUntil only takes depth 2 or 3 at the moment!");
     } else return result;
-};
+}
 
 function getClock() {
     let msClock = Date.now() - date.setHours(0, 0, 0, 0);
 
     return (milliToTime(msClock));
-};
+}
 
 function getNameByIndex(obj, val) {
     return Object.keys(obj)[val].toString();
-};
+}
 
 function timeToMilli(handmstring) {
     let arrayTime = handmstring.split(":");
 
     return (date.setHours(arrayTime[0], arrayTime[1], 0, 0) - date.setHours(0, 0, 0, 0));
-};
+}
 
 function milliToTime(duration, returnString = false) {
     let milliseconds = parseInt((duration % 1000) / 100),
@@ -141,16 +141,16 @@ function milliToTime(duration, returnString = false) {
         if (hours > 1) hours = hours + " timer"; else hours = "1 time";
         if (minutes > 1) minutes = minutes + " minutter"; else minutes = "1 minutt";
         return hours + " og " + minutes;
-    };
-};
+    }
+}
 
 function untisTimeParse(time) {
     let match = /(\d{1,2})(\d{2})/.exec(time);
     if (match[1].length == 1) match[1] = "0" + match[1];
     return (match[1] + ":" + match[2]);
-};
+}
 
-var lastNoti = {};
+var lastNoti = {}
 
 //Sjekke etter timer som starter om 5 min
 function intervalFunc() {
@@ -171,12 +171,12 @@ function intervalFunc() {
                         .catch(console.error);
                     lastNoti[getNameByIndex(timer, skolecount)] = timeToMilli(getClock());
                     console.log(`class found ${i} sent notification`);
-                };
-            };
+                }
+            }
             console.log("checked school");
-        };
+        }
     } else isWeekend = true;
-};
+}
 
 function checkIfSchoolExists(part, school) {
     switch (part) {
@@ -186,8 +186,8 @@ function checkIfSchoolExists(part, school) {
             if (timer[school].fullName != "") return true; else return false;
         case "kanal":
             if (timer[school].kanal != "") return true; else return false;
-    };
-};
+    }
+}
 
 async function findAndSaveClasses(nameKey, school) {
     nameKey = nameKey.toLowerCase();
@@ -207,40 +207,40 @@ async function findAndSaveClasses(nameKey, school) {
             if (await myArray[i].name.toLowerCase() === nameKey) {
                 resultSearch = await myArray[i];
                 break;
-            };
-        };
+            }
+        }
 
         if (await resultSearch == undefined) return ("not found");
 
         var timerContent = fs.readFileSync("timer.json");
         var timerJson = JSON.parse(timerContent);
         console.log(timerJson);
-        if (!timerJson[school]) timerJson[school] = { 'timer': [], 'kanal': '', 'fullName': '', 'savedClasses': {} };
+        if (!timerJson[school]) timerJson[school] = { 'timer': [], 'kanal': '', 'fullName': '', 'savedClasses': {} }
         timerJson[school].savedClasses[nameKey] = resultSearch;
         console.log(timerJson);
         fs.writeFileSync("timer.json", JSON.stringify(timerJson));
         console.log("found from server and saved");
         return resultSearch;
 
-    };
-};
+    }
+}
 
 async function loginSchool(school) {
     untis = new WebUntisLib.WebUntisAnonymousAuth(school,'romres.ist-asp.com');
     return await untis.login();
-};
+}
 
 function timetableToEmbed(timetable, forClass, givenDate) {
     if (!timetable[0]) return new Discord.MessageEmbed().setTitle("Timeplanen er tom! :)").setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()}`);
     
     let timetableSorted = timetable.sort((a, b) => parseFloat(a.startTime) - parseFloat(b.startTime));
     let firstTime = timetableSorted[0].startTime;
-    let timeArray = {};
+    let timeArray = {}
     timeArray[firstTime] = [timetableSorted[0]];
     for (let i = 1; i < timetableSorted.length; i++) {
         if (Object.keys(timeArray).findIndex(item => item == timetableSorted[i].startTime) == -1) timeArray[timetableSorted[i].startTime] = [timetableSorted[i]];
         else timeArray[timetableSorted[i].startTime].push(timetableSorted[i]);
-    };
+    }
 
     for (let i = 1; i < Object.keys(timeArray).length; i++) {
         // hvis innholdet i forrige økt er lik innholdet i økt "i"
@@ -248,8 +248,8 @@ function timetableToEmbed(timetable, forClass, givenDate) {
             changeMultipleProps(timeArray[Object.keys(timeArray)[i - 1]], "endTime", timeArray[Object.keys(timeArray)[i]][0].endTime);
             delete timeArray[Object.keys(timeArray)[i]];
             i--;
-        };
-    };
+        }
+    }
 
     let timetableEmbed = new Discord.MessageEmbed()
         .setColor('#0099ff')
@@ -266,30 +266,30 @@ function timetableToEmbed(timetable, forClass, givenDate) {
         untisTimeParse(Object.keys(timeArray)[i]);
         timetableEmbed.addField("\n" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].startTime) + "-" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].endTime), fieldsToBeAdded.join('\n'));
         timetableEmbed.setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()} - updated ${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`);
-    };
+    }
     return timetableEmbed;
-};
+}
 
 function changeMultipleProps(array, property, value) {
     for (let i in array) array[i][property] = value;
-};
+}
 
 async function changeReactable(sentMsg, rClass, dateReacc) {
     let chanid = sentMsg.channel.id;
     if (currentReactable[chanid]) sentMsg.channel.messages.fetch(currentReactable[chanid].msgid).then(gotMessage => gotMessage.delete());
     await sentMsg.react('⬅️');
     await sentMsg.react('➡️');
-    currentReactable[chanid] = { msgid: "", class: "" };
+    currentReactable[chanid] = { msgid: "", class: "" }
     currentReactable[chanid].msgid = sentMsg.id;
     currentReactable[chanid].class = rClass;
     currentReactable[chanid].dateDisplayed = dateReacc;
-};
+}
 
 Date.prototype.addDays = function (days) {
     let dodate = new Date(this.valueOf());
     dodate.setDate(date.getDate() + days);
     return dodate;
-};
+}
 
 
 //-------------------------------------------- MSG / STRINGS
@@ -321,7 +321,7 @@ var repeatedStrings =
     "beforeS": "Skolen har ikke startet ennå.",
     "break": "Nå er det pause.",
     "weekend": "Nå er det helg. Kos deg!"
-};
+}
 
 function msgNextOkt(msg, skole, when = getClock()) {
     let currentPeriod = returnCurrentPeriod(skole, when);
@@ -354,8 +354,8 @@ function msgNextOkt(msg, skole, when = getClock()) {
         default:
             msg.channel.send("Noe gikk galt! Det kan hende timene ikke er satt opp for denne skolen. Kontakt admin.");
             console.error("Missing hours or error");
-    };
-};
+    }
+}
 
 function msgCurrentOkt(msg, skole, when = getClock()) {
     let currentPeriod = returnCurrentPeriod(skole, when);
@@ -380,9 +380,9 @@ function msgCurrentOkt(msg, skole, when = getClock()) {
         default:
             msg.channel.send("Noe gikk galt! Det kan hende timene ikke er satt opp for denne skolen. Kontakt admin.");
             console.error("Missing hours or error");
-    };
+    }
 
-};
+}
 
 // ----------------------------------- FUNS FOR COMMANDS
 
@@ -396,14 +396,14 @@ function funSetChannel(msg,args) {
             var timerContent = fs.readFileSync("timer.json");
             var timerJson = JSON.parse(timerContent);
             console.log(timerJson);
-            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', 'fullName': '' }; };
+            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', 'fullName': '' } }
             timerJson[args[0]].kanal = msg.channel.id;
             console.log(timerJson);
             fs.writeFileSync("timer.json", JSON.stringify(timerJson));
 
             setchannel.setName(`${args[0]}-skoletimer`);
             setchannel.setTopic(`Dette er skoletime-kanalen for ${timer[args].fullName}.`);
-        };
+        }
 
     } else msg.channel.send("Du har ikke rettigheter nok til å bruke denne kommandoen")
 }
@@ -422,86 +422,69 @@ function funTime(msg,args) {
             msgNextOkt(msg, schoolname, args[0]);
         } else msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
     } else msg.reply("Tidspunktet må være i formatet TT:MM.");
-};
+}
 
 function funKlasse(msg,args) {
-    var schoolname = msg.channel.name.split("-")[0]
-    if (!timer[schoolname].untisName) {
-        msg.channel.send("Denne skolen bruker ikke WebUntis, som er der jeg henter timer fra. De andre kommandoene som ikke innebærer å vise fag vil fortsatt fungere.")
-    } else if (args[0]) {
+    var schoolname = msg.channel.name.split("-")[0];
+    if (!timer[schoolname].untisName) msg.channel.send("Denne skolen bruker ikke WebUntis, som er der jeg henter timer fra. De andre kommandoene som ikke innebærer å vise fag vil fortsatt fungere.");
+    else if (args[0]) {
         if (args[1] === `timeplan`) {
             findAndSaveClasses(args[0], schoolname).then(resultClass => {
-                if (resultClass == "not found") {
-                    msg.channel.send("Klassen ble ikke funnet")
-                } else {
+                if (resultClass == "not found") msg.channel.send("Klassen ble ikke funnet");
+                else {
                     let givenDate = new Date();
                     if (args[2]) {
                         let currentDay;
-                        if (date.getDay() == 0) {
-                            currentDay = 7
-                        } else {
-                            currentDay = date.getDay() - 1
-                        }
+                        if (date.getDay() == 0) currentDay = 7;
+                        else currentDay = date.getDay() - 1;
                         if (weekdays.indexOf(args[2]) < date.getDay()) {
-                            let difference = weekdays.indexOf(args[2]) + 7 - currentDay
-                            givenDate = givenDate.addDays(difference)
+                            let difference = weekdays.indexOf(args[2]) + 7 - currentDay;
+                            givenDate = givenDate.addDays(difference);
                         } else {
-                            let difference = weekdays.indexOf(args[2]) - currentDay
-                            givenDate = givenDate.addDays(difference)
+                            let difference = weekdays.indexOf(args[2]) - currentDay;
+                            givenDate = givenDate.addDays(difference);
                         }
                         console.log(resultClass);
                         loginSchool(timer[schoolname].untisName)
                             .then(() => {
-                                console.log(givenDate + " id: " + resultClass.id)
+                                console.log(givenDate + " id: " + resultClass.id);
                                 return untis.getTimetableFor(givenDate, resultClass.id, WebUntisLib.TYPES.CLASS)
                                     .then(timeTable => {
-                                        console.log(timeTable)
-                                        let ttembed = timetableToEmbed(timeTable, resultClass, givenDate)
+                                        let ttembed = timetableToEmbed(timeTable, resultClass, givenDate);
                                         msg.channel.send(ttembed)
                                             .then(sentMsg => {
-                                                if (ttembed.title != 'Timeplanen er tom! :)') {
-                                                    changeReactable(sentMsg, resultClass, givenDate)
-                                                }
-                                            })
-                                    })
-                            }).then(untis.logout())
+                                                if (ttembed.title != 'Timeplanen er tom! :)') changeReactable(sentMsg, resultClass, givenDate)
+                                            });
+                                    });
+                            }).then(untis.logout());
                     } else {
                         console.log(resultClass);
                         loginSchool(timer[schoolname].untisName)
                             .then(() => {
                                 return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
                                     .then(timeTable => {
-                                        console.log(timeTable)
+                                        console.log(timeTable);
                                         msg.channel.send(timetableToEmbed(timeTable, resultClass, date))
-                                            .then(sentMsg => changeReactable(sentMsg, resultClass, date))
-                                    })
-                            }).then(untis.logout())
+                                            .then(sentMsg => changeReactable(sentMsg, resultClass, date));
+                                    });
+                            }).then(untis.logout());
                     }
                 }
-            })
-        } else {
-            findAndSaveClasses(args[0], schoolname).then(resultClass => {
-                if (resultClass == "not found") {
-                    msg.channel.send("Klassen ble ikke funnet")
-                } else {
+            });
+        } else findAndSaveClasses(args[0], schoolname).then(resultClass => {
+                if (resultClass == "not found") msg.channel.send("Klassen ble ikke funnet")
+                else {
                     let embed = new Discord.MessageEmbed()
                         .setTitle(resultClass.longName)
                     msg.channel.send(embed)
                 }
-            })
-        }
-
-    } else {
-        msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.")
-    }
+            });
+    } else msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.");
 }
 
 function funTimeplan(msg) {
-    if (!timer[msg.channel.name.split("-")[0]]) {
-        msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
-    } else {
-        msg.channel.send(makeTimeplanEmbed(msg))
-    };
+    if (!timer[msg.channel.name.split("-")[0]]) msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
+    else msg.channel.send(makeTimeplanEmbed(msg))
 }
 
 function funMusic(msg,match) {
@@ -509,21 +492,20 @@ function funMusic(msg,match) {
     var voiceChannel = msg.member.voice.channel;
     let files = fs.readdirSync('./src/')
     console.log(files)
-    if (voiceChannel == null) {
-        msg.channel.send("Du må være i en voice-kanal for å kunne spille av lydfiler.")
-    } else if (files.indexOf(match[1] + ".mp3") > -1) {
-        msg.delete()
+    if (voiceChannel == null) msg.channel.send("Du må være i en voice-kanal for å kunne spille av lydfiler.")
+    else if (files.indexOf(match[1] + ".mp3") > -1) {
+        msg.delete();
         let ender = () => {
             msg.member.voice.channel.leave();
-        };
+        }
         voiceChannel.join().then(connection => {
-            const dispatcher = connection.play(`./src/${match[1]}.mp3`)
-            dispatcher.setVolume(0.5)
+            const dispatcher = connection.play(`./src/${match[1]}.mp3`);
+            dispatcher.setVolume(0.5);
             dispatcher.on("finish", ender);
         }).catch(err => console.log(err));
         isReady = true;
     } else {
-        msg.channel.send("Fant ikke den filen.")
+        msg.channel.send("Fant ikke den filen.");
         isReady = true;
     }
 }
@@ -536,7 +518,7 @@ client.on('ready', async () => {
         throw new Error('Omg');
     } catch (e) {
         console.log(`Logged in as ${client.user.tag}!`);
-        setInterval(intervalFunc, 20000)
+        setInterval(intervalFunc, 20000);
         client.user.setPresence({ activity: { name: `tikkelyder. "${prefix}"` }, status: 'available' })
             .catch(console.error);
     }
@@ -570,11 +552,11 @@ client.on('message', msg => {
         default:
             // KOMMANDO lydfil. Regex etter kommando som slutter med "?"
             if (isReady && /\w*\?/.test(command)) {
-                let match = /(\w*)\?/.exec(command)
-                funMusic(msg,match)
-            };
+                let match = /(\w*)\?/.exec(command);
+                funMusic(msg,match);
+            }
     }
-})
+});
 
 var currentReactable = {};
 
@@ -592,21 +574,17 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 
     if (reaction.message.author.bot && currentReactable[reaction.message.channel.id] && !user.bot) {
-
-        let dateAfterLorR = currentReactable[reaction.message.channel.id].dateDisplayed
-        if (reaction.emoji.name === '⬅️') {
-            dateAfterLorR.setDate(dateAfterLorR.getDate() - 1)
-        } else if (reaction.emoji.name === '➡️') {
-            dateAfterLorR.setDate(dateAfterLorR.getDate() + 1)
-        }
+        let dateAfterLorR = currentReactable[reaction.message.channel.id].dateDisplayed;
+        if (reaction.emoji.name === '⬅️') dateAfterLorR.setDate(dateAfterLorR.getDate() - 1);
+        else if (reaction.emoji.name === '➡️') dateAfterLorR.setDate(dateAfterLorR.getDate() + 1);
         loginSchool(timer[reaction.message.channel.name.split("-")[0]].untisName)
             .then(() => {
                 return untis.getTimetableFor(dateAfterLorR, currentReactable[reaction.message.channel.id].class.id, WebUntisLib.TYPES.CLASS)
                     .then(timeTable => {
-                        reaction.message.edit(timetableToEmbed(timeTable, currentReactable[reaction.message.channel.id].class, dateAfterLorR))
-                        reaction.users.remove(user.id)
+                        reaction.message.edit(timetableToEmbed(timeTable, currentReactable[reaction.message.channel.id].class, dateAfterLorR));
+                        reaction.users.remove(user.id);
                     })
-            }).then(untis.logout())
+            }).then(untis.logout());
     }
 });
 
