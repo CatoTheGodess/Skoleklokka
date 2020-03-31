@@ -22,21 +22,16 @@ const weekdaysSun = ["søndag", "mandag", "tirsdag", "onsdag", "torsdag", "freda
 
 process.on('SIGINT', function () {
     console.log("Caught interrupt signal");
-
-    if (untis) {
-        untis.logout().then(process.exit())
-    } else {
-        process.exit()
-    }
+    if (untis) untis.logout().then(process.exit());
+    else process.exit();
 });
 
 // Returns state right now. (In class or not, etc)
 function returnCurrentPeriod(skole, when = getClock()) {
     let checkOkt = 0;
     console.log(date.getDay())
-    if (date.getDay() == 6 || date.getDay() == 0) {
-        return ["weekend"]
-    } else if (timeToMilli(when) <= timeToMilli(timer[skole].timer[timer[skole].timer.length - 1].slutt) && timeToMilli(when) >= timeToMilli(timer[skole].timer[0].start)) {
+    if (date.getDay() == 6 || date.getDay() == 0) return ["weekend"]
+    else if (timeToMilli(when) <= timeToMilli(timer[skole].timer[timer[skole].timer.length - 1].slutt) && timeToMilli(when) >= timeToMilli(timer[skole].timer[0].start)) {
         // tidspunktet er i skoletiden
         while (timer[skole].timer[checkOkt]) {
             if (timeToMilli(when) >= timeToMilli(timer[skole].timer[checkOkt].start) && timeToMilli(when) <= timeToMilli(timer[skole].timer[checkOkt].slutt)) {
@@ -49,15 +44,11 @@ function returnCurrentPeriod(skole, when = getClock()) {
                 checkOkt++;
             }
         }
-    } else if (Date.parse("01/01/2020 " + when) < Date.parse("01/01/2020 " + timer[skole].timer[0].start)) {
-        // hvis før skolen
-        return ["førSkole"]
-    } else if (Date.parse("01/01/2020 " + when) > Date.parse("01/01/2020 " + timer[skole].timer[timer[skole].timer.length - 1].start)) {
-        // hvis etter skolen
-        return ["etterSkole"]
-    } else {
-        console.error("could not find time in day")
-    };
+    }
+    else if (Date.parse("01/01/2020 " + when) < Date.parse("01/01/2020 " + timer[skole].timer[0].start)) return ["førSkole"];
+    else if (Date.parse("01/01/2020 " + when) > Date.parse("01/01/2020 " + timer[skole].timer[timer[skole].timer.length - 1].start)) return ["etterSkole"];
+    else console.error("could not find time in day");
+    
 }
 
 String.prototype.capitalizeFirstLetter = function () {
@@ -84,82 +75,56 @@ function makeTimeplanEmbed(msg) {
 }
 
 function howLongSinceUntil(sinceUntilThis, stringReturn = false, allowSince = false, fromTime = getClock(), depth = 2) {
-    let difference = timeToMilli(sinceUntilThis) - timeToMilli(fromTime)
+    let difference = timeToMilli(sinceUntilThis) - timeToMilli(fromTime);
     let result;
     let timeArray;
 
-    if (difference >= 0) {
-        // tid til
-        result = milliToTime(difference)
-    } else if (difference <= 0 && allowSince) {
-        // tid siden
-        result = milliToTime(difference * -1) + " siden"
-    } else {
-        result = milliToTime(timeToMilli(sinceUntilThis) + 86400000 - timeToMilli(fromTime))
-    }
-
-    console.log(result)
+    if (difference >= 0) result = milliToTime(difference); // tid til
+    else if (difference <= 0 && allowSince) result = milliToTime(difference * -1) + " siden"; // tid siden
+    else result = milliToTime(timeToMilli(sinceUntilThis) + 86400000 - timeToMilli(fromTime));
 
     if (stringReturn) {
-        let timeArr = result.split(" ")[0].split(":")
-        timeArray = result.split(" ")[0].split(":")
-        if (timeArray[0].slice(0, 1) == 0) { timeArray[0] = timeArray[0].slice(1) }
-        if (timeArray[1].slice(0, 1) == 0) { timeArray[1] = timeArray[1].slice(1) }
-        if (timeArray[0] > 1) { timeArray[0] = timeArray[0] + " timer" } else { timeArray[0] = timeArray[0] + " time" }
-        if (timeArray[1] > 1) { timeArray[1] = timeArray[1] + " minutter" } else { timeArray[1] = timeArray[1] + " minutt" }
+        let timeArr = result.split(" ")[0].split(":");
+        timeArray = result.split(" ")[0].split(":");
+        if (timeArray[0].slice(0, 1) == 0) timeArray[0] = timeArray[0].slice(1);
+        if (timeArray[1].slice(0, 1) == 0) timeArray[1] = timeArray[1].slice(1);
+        if (timeArray[0] > 1) timeArray[0] = timeArray[0] + " timer"; else timeArray[0] = timeArray[0] + " time";
+        if (timeArray[1] > 1) timeArray[1] = timeArray[1] + " minutter"; else timeArray[1] = timeArray[1] + " minutt";
         if (depth === 2) {
+
             if (result.split(" ")[1] === "siden") {
-                if (timeArr[0] == 00 && timeArr[1] == 00) { return `nå` }
-                else if (timeArr[0] == 00) { return `for ${timeArray[1]} siden` }
-                else { return `for ${timeArray[0]} og ${timeArray[1]} siden` }
-            }
-            else {
-                if (timeArr[0] == 00 && timeArr[1] == 00) { return `nå` }
-                else if (timeArr[0] == 00) { return `om ${timeArray[1]}` }
-                else { return `om ${timeArray[0]} og ${timeArray[1]}` }
-            }
-
-
-
+                if (timeArr[0] == 00 && timeArr[1] == 00) return `nå`;
+                else if (timeArr[0] == 00) return `for ${timeArray[1]} siden`;
+                else return `for ${timeArray[0]} og ${timeArray[1]} siden`;
+            } else {
+                if (timeArr[0] == 00 && timeArr[1] == 00) return `nå`;
+                else if (timeArr[0] == 00) return `om ${timeArray[1]}`;
+                else return `om ${timeArray[0]} og ${timeArray[1]}`;
+            };
         } else if (depth === 3) {
-            if (!(timeArray[2] === 1)) {
-                timeArray[2] = timeArray[2] + " sekunder"
-            } else {
-                timeArray[2] = timeArray[2] + " sekund"
-            }
-            if (result.split(" ")[1] === "siden") {
-                return `for ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]} siden`
-            } else {
-                return `om ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]}`
-            }
-        } else {
-            console.error("howLongSinceUntil only takes depth 2 or 3 at the moment!");
-        }
-    } else {
-        return result;
-    }
-
-}
+            if (!(timeArray[2] === 1)) timeArray[2] = timeArray[2] + " sekunder";
+            else timeArray[2] = timeArray[2] + " sekund";
+            if (result.split(" ")[1] === "siden") return `for ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]} siden`;
+            else return `om ${timeArray[0]}, ${timeArray[1]} og ${timeArray[2]}`;
+        } else console.error("howLongSinceUntil only takes depth 2 or 3 at the moment!");
+    } else return result;
+};
 
 function getClock() {
-    let msClock = Date.now() - date.setHours(0, 0, 0, 0)
+    let msClock = Date.now() - date.setHours(0, 0, 0, 0);
 
     return (milliToTime(msClock));
-}
-
-function objectLength(object) {
-    return Object.keys(object).length;
-}
+};
 
 function getNameByIndex(obj, val) {
-    return Object.keys(obj)[val].toString()
-}
+    return Object.keys(obj)[val].toString();
+};
 
 function timeToMilli(handmstring) {
     let arrayTime = handmstring.split(":");
 
     return (date.setHours(arrayTime[0], arrayTime[1], 0, 0) - date.setHours(0, 0, 0, 0));
-}
+};
 
 function milliToTime(duration, returnString = false) {
     let milliseconds = parseInt((duration % 1000) / 100),
@@ -173,27 +138,17 @@ function milliToTime(duration, returnString = false) {
         seconds = (seconds < 10) ? "0" + seconds : seconds;
         return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
     } else {
-        if (hours > 1) {
-            hours = hours + " timer"
-        } else {
-            hours = "1 time"
-        }
-        if (minutes > 1) {
-            minutes = minutes + " minutter"
-        } else {
-            minutes = "1 minutt"
-        }
-        return hours + " og " + minutes
-    }
-}
+        if (hours > 1) hours = hours + " timer"; else hours = "1 time";
+        if (minutes > 1) minutes = minutes + " minutter"; else minutes = "1 minutt";
+        return hours + " og " + minutes;
+    };
+};
 
 function untisTimeParse(time) {
-    let match = /(\d{1,2})(\d{2})/.exec(time)
-    if (match[1].length == 1) {
-        match[1] = "0" + match[1]
-    }
-    return (match[1] + ":" + match[2])
-}
+    let match = /(\d{1,2})(\d{2})/.exec(time);
+    if (match[1].length == 1) match[1] = "0" + match[1];
+    return (match[1] + ":" + match[2]);
+};
 
 var lastNoti = {};
 
@@ -202,91 +157,78 @@ function intervalFunc() {
     date = new Date();
     if (date.getDay() > 0 && date.getDay() < 6) {
         isWeekend = false;
-        let totalSchools = objectLength(timer);
+        let totalSchools = Object.keys(timer).length;
         console.log(`[${getClock()}]`);
         for (let skolecount = 0; skolecount < totalSchools; skolecount++) {
             console.log("--- " + getNameByIndex(timer, skolecount) + " ---");
             for (let i = 0; i < timer[getNameByIndex(timer, skolecount)].timer.length; i++) {
                 // Notify 5-6 min before event
-                let milliCurrentStart = timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start)
-                let milliClock = timeToMilli(getClock())
+                let milliCurrentStart = timeToMilli(timer[getNameByIndex(timer, skolecount)].timer[i].start);
+                let milliClock = timeToMilli(getClock());
                 if (milliClock >= (milliCurrentStart - 360000) && milliClock <= (milliCurrentStart - 300000) && !(milliClock - lastNoti[getNameByIndex(timer, skolecount)] <= 300000)) {
                     client.channels.fetch(timer[getNameByIndex(timer, skolecount)].kanal)
                         .then(channel => channel.send("Neste økt starter om 5 min!"))
                         .catch(console.error);
                     lastNoti[getNameByIndex(timer, skolecount)] = timeToMilli(getClock());
-                    console.log(`class found ${i} sent notification`)
-                }
-            }
-            console.log("checked school")
-        }
-    } else {
-        isWeekend = true;
-    }
-}
+                    console.log(`class found ${i} sent notification`);
+                };
+            };
+            console.log("checked school");
+        };
+    } else isWeekend = true;
+};
 
-function checkIfSchoolExist(part, school) {
+function checkIfSchoolExists(part, school) {
     switch (part) {
         case "timer":
-            if (timer[school].timer[0]) {
-                return true
-            } else return false
+            if (timer[school].timer[0]) return true; else return false;
         case "fullName":
-            if (timer[school].fullName != "") {
-                return true
-            } else return false
+            if (timer[school].fullName != "") return true; else return false;
         case "kanal":
-            if (timer[school].kanal != "") {
-                return true
-            } else return false
-    }
-}
+            if (timer[school].kanal != "") return true; else return false;
+    };
+};
 
 async function findAndSaveClasses(nameKey, school) {
-    nameKey = nameKey.toLowerCase()
+    nameKey = nameKey.toLowerCase();
     if (timer[school].savedClasses[nameKey]) {
-        console.log("found saved")
-        return timer[school].savedClasses[nameKey]
+        console.log("found saved");
+        return timer[school].savedClasses[nameKey];
     } else {
         var untisGetclasses = loginSchool(timer[school].untisName)
             .then(() => {
                 return untis.getClasses();
-            })
-        var myArray = await untisGetclasses
-        untis.logout()
+            });
+        var myArray = await untisGetclasses;
+        untis.logout();
 
         let resultSearch;
         for (var i = 0; i < myArray.length; i++) {
             if (await myArray[i].name.toLowerCase() === nameKey) {
                 resultSearch = await myArray[i];
                 break;
-            }
-        }
+            };
+        };
 
-        if (await resultSearch == undefined) {
-            return ("not found")
-        }
+        if (await resultSearch == undefined) return ("not found");
 
         var timerContent = fs.readFileSync("timer.json");
         var timerJson = JSON.parse(timerContent);
         console.log(timerJson);
-        if (!timerJson[school]) { timerJson[school] = { 'timer': [], 'kanal': '', 'fullName': '', 'savedClasses': {} }; };
+        if (!timerJson[school]) timerJson[school] = { 'timer': [], 'kanal': '', 'fullName': '', 'savedClasses': {} };
         timerJson[school].savedClasses[nameKey] = resultSearch;
         console.log(timerJson);
         fs.writeFileSync("timer.json", JSON.stringify(timerJson));
-        console.log("found from server and saved")
+        console.log("found from server and saved");
         return resultSearch;
 
-    }
-}
+    };
+};
 
 async function loginSchool(school) {
-    untis = new WebUntisLib.WebUntisAnonymousAuth(
-        school,
-        'romres.ist-asp.com'
-    );
-    return await untis.login()
-}
+    untis = new WebUntisLib.WebUntisAnonymousAuth(school,'romres.ist-asp.com');
+    return await untis.login();
+};
 
 function timetableToEmbed(timetable, forClass, givenDate) {
     if (!timetable[0]) {
@@ -394,8 +336,6 @@ var repeatedStrings =
 function msgNextOkt(msg, skole, when = getClock()) {
     let currentPeriod = returnCurrentPeriod(skole, when)
 
-    console.log(currentPeriod)
-
     switch (currentPeriod[0]) {
         case "iøkt":
             if (currentPeriod[2] === timer[skole].timer.length - 1 && date.getDay() == 5) {
@@ -429,7 +369,6 @@ function msgNextOkt(msg, skole, when = getClock()) {
             msg.channel.send("Noe gikk galt! Det kan hende timene ikke er satt opp for denne skolen. Kontakt admin.");
             console.error("Missing hours or error");
     }
-
 };
 
 function msgCurrentOkt(msg, skole, when = getClock()) {
@@ -448,17 +387,13 @@ function msgCurrentOkt(msg, skole, when = getClock()) {
             };
             break;
         case "etterSkole":
-            msg.channel.send(repeatedStrings.afterS);
-            break;
+            msg.channel.send(repeatedStrings.afterS); break;
         case "førSkole":
-            msg.channel.send(repeatedStrings.beforeS);
-            break;
+            msg.channel.send(repeatedStrings.beforeS); break;
         case "pausefør":
-            msg.channel.send(repeatedStrings.break);
-            break;
+            msg.channel.send(repeatedStrings.break); break;
         case "weekend":
-            msg.channel.send(repeatedStrings.weekend)
-            break;
+            msg.channel.send(repeatedStrings.weekend); break;
         default:
             msg.channel.send("Noe gikk galt! Det kan hende timene ikke er satt opp for denne skolen. Kontakt admin.");
             console.error("Missing hours or error");
@@ -466,7 +401,165 @@ function msgCurrentOkt(msg, skole, when = getClock()) {
 
 };
 
+// ----------------------------------- FUNS FOR COMMANDS
 
+function funSetChannel(msg,args) {
+    if (msg.member.roles.cache.some(role => role.name === 'Vaktmester')) {
+        console.log(msg.channel.id)
+        const setchannel = msg.channel;
+        if (!args[0]) {
+            msg.channel.send("Du må skrive forkortelsen til skolen du vil binde til kanalen. (eks.)");
+        } else {
+            msg.reply(`Setter denne kanalen (${msg.channel.id}) som kanal for ${args[0]}!`);
+            var timerContent = fs.readFileSync("timer.json");
+            var timerJson = JSON.parse(timerContent);
+            console.log(timerJson);
+            if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', 'fullName': '' }; };
+            timerJson[args[0]].kanal = msg.channel.id;
+            console.log(timerJson);
+            fs.writeFileSync("timer.json", JSON.stringify(timerJson));
+
+            setchannel.setName(`${args[0]}-skoletimer`);
+            setchannel.setTopic(`Dette er skoletime-kanalen for ${timer[args].fullName}.`);
+        };
+
+    } else {
+        msg.channel.send("Du har ikke rettigheter nok til å bruke denne kommandoen")
+    }
+}
+
+function funTime(msg,args) {
+    var schoolname = msg.channel.name.split("-")[0]
+    if (!args[0] || args[0] === `info`) {
+        if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) {
+            msgCurrentOkt(msg, schoolname);
+        } else {
+            msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+        };
+
+    } else if (args[0] === `neste`) {
+
+        if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) {
+            msgNextOkt(msg, schoolname);
+        } else {
+            msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+        };
+
+    } else if (/[0-2]\d:[0-6]\d/.test(args[0])) {
+        if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) {
+            msg.channel.send(`Bruker tidspunkt ${args[0]}.`);
+            msgNextOkt(msg, schoolname, args[0]);
+        } else {
+            msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+        };
+
+
+    } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
+}
+
+function funKlasse(msg,args) {
+    var schoolname = msg.channel.name.split("-")[0]
+    if (!timer[schoolname].untisName) {
+        msg.channel.send("Denne skolen bruker ikke WebUntis, som er der jeg henter timer fra. De andre kommandoene som ikke innebærer å vise fag vil fortsatt fungere.")
+    } else if (args[0]) {
+        if (args[1] === `timeplan`) {
+            findAndSaveClasses(args[0], schoolname).then(resultClass => {
+                if (resultClass == "not found") {
+                    msg.channel.send("Klassen ble ikke funnet")
+                } else {
+                    let givenDate = new Date();
+                    if (args[2]) {
+                        let currentDay;
+                        if (date.getDay() == 0) {
+                            currentDay = 7
+                        } else {
+                            currentDay = date.getDay() - 1
+                        }
+                        if (weekdays.indexOf(args[2]) < date.getDay()) {
+                            let difference = weekdays.indexOf(args[2]) + 7 - currentDay
+                            givenDate = givenDate.addDays(difference)
+                        } else {
+                            let difference = weekdays.indexOf(args[2]) - currentDay
+                            givenDate = givenDate.addDays(difference)
+                        }
+                        console.log(resultClass);
+                        loginSchool(timer[schoolname].untisName)
+                            .then(() => {
+                                console.log(givenDate + " id: " + resultClass.id)
+                                return untis.getTimetableFor(givenDate, resultClass.id, WebUntisLib.TYPES.CLASS)
+                                    .then(timeTable => {
+                                        console.log(timeTable)
+                                        let ttembed = timetableToEmbed(timeTable, resultClass, givenDate)
+                                        msg.channel.send(ttembed)
+                                            .then(sentMsg => {
+                                                if (ttembed.title != 'Timeplanen er tom! :)') {
+                                                    changeReactable(sentMsg, resultClass, givenDate)
+                                                }
+                                            })
+                                    })
+                            }).then(untis.logout())
+                    } else {
+                        console.log(resultClass);
+                        loginSchool(timer[schoolname].untisName)
+                            .then(() => {
+                                return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
+                                    .then(timeTable => {
+                                        console.log(timeTable)
+                                        msg.channel.send(timetableToEmbed(timeTable, resultClass, date))
+                                            .then(sentMsg => changeReactable(sentMsg, resultClass, date))
+                                    })
+                            }).then(untis.logout())
+                    }
+                }
+            })
+        } else {
+            findAndSaveClasses(args[0], schoolname).then(resultClass => {
+                if (resultClass == "not found") {
+                    msg.channel.send("Klassen ble ikke funnet")
+                } else {
+                    let embed = new Discord.MessageEmbed()
+                        .setTitle(resultClass.longName)
+                    msg.channel.send(embed)
+                }
+            })
+        }
+
+    } else {
+        msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.")
+    }
+}
+
+function funTimeplan(msg) {
+    if (!timer[msg.channel.name.split("-")[0]]) {
+        msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
+    } else {
+        msg.channel.send(makeTimeplanEmbed(msg))
+    };
+}
+
+function funMusic(msg,match) {
+    isReady = false;
+    var voiceChannel = msg.member.voice.channel;
+    let files = fs.readdirSync('./src/')
+    console.log(files)
+    if (voiceChannel == null) {
+        msg.channel.send("Du må være i en voice-kanal for å kunne spille av lydfiler.")
+    } else if (files.indexOf(match[1] + ".mp3") > -1) {
+        msg.delete()
+        let ender = () => {
+            msg.member.voice.channel.leave();
+        };
+        voiceChannel.join().then(connection => {
+            const dispatcher = connection.play(`./src/${match[1]}.mp3`)
+            dispatcher.setVolume(0.5)
+            dispatcher.on("finish", ender);
+        }).catch(err => console.log(err));
+        isReady = true;
+    } else {
+        msg.channel.send("Fant ikke den filen.")
+        isReady = true;
+    }
+}
 
 //------------------------------------------------ON
 
@@ -488,194 +581,30 @@ client.on('message', msg => {
     const args = msg.content.slice(prefix.length).split(' ');
     const command = args.shift().toLowerCase();
     switch (command) {
-
         // KOMMANDO SETCHANNEL. Lagrer kanalen som dette skrives i som "kanal" i timer-json og setter desc. TODO: FIKS NAVN VIL IKKE ENDRES
         case "setchannel":
-            if (msg.member.roles.cache.some(role => role.name === 'Vaktmester')) {
-                console.log(msg.channel.id)
-                const setchannel = msg.channel;
-                if (!args[0]) {
-                    msg.channel.send("Du må skrive forkortelsen til skolen du vil binde til kanalen. (eks.)");
-                } else {
-                    msg.reply(`Setter denne kanalen (${msg.channel.id}) som kanal for ${args[0]}!`);
-                    var timerContent = fs.readFileSync("timer.json");
-                    var timerJson = JSON.parse(timerContent);
-                    console.log(timerJson);
-                    if (!timerJson[args[0]]) { timerJson[args[0]] = { 'timer': [], 'kanal': '', 'fullName': '' }; };
-                    timerJson[args[0]].kanal = msg.channel.id;
-                    console.log(timerJson);
-                    fs.writeFileSync("timer.json", JSON.stringify(timerJson));
-
-                    setchannel.setName(`${args[0]}-skoletimer`);
-                    setchannel.setTopic(`Dette er skoletime-kanalen for ${timer[args].fullName}.`);
-                };
-
-            } else {
-                msg.channel.send("Du har ikke rettigheter nok til å bruke denne kommandoen")
-            }
-            break;
-
-
+            funSetChannel(msg,args); break;
         // KOMMANDO TIME. Bruker tidspunktet til å finne basic info om nåværennde økt, uten fag og webuntis
         case "time":
-
-            var schoolname = msg.channel.name.split("-")[0]
-            if (!args[0] || args[0] === `info`) {
-                if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
-                    msgCurrentOkt(msg, schoolname);
-                } else {
-                    msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-                };
-
-            } else if (args[0] === `neste`) {
-
-                if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
-                    msgNextOkt(msg, schoolname);
-                } else {
-                    msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-                };
-
-            } else if (/[0-2]\d:[0-6]\d/.test(args[0])) {
-                if (timer[schoolname] && checkIfSchoolExist("timer", schoolname)) {
-                    msg.channel.send(`Bruker tidspunkt ${args[0]}.`);
-                    msgNextOkt(msg, schoolname, args[0]);
-                } else {
-                    msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-                };
-
-
-            } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
-            break;
-
-
+            funTime(msg,args); break;
         // KOMMANDO KLASSE. Bruker klasse string (eks. 1std) til å finne timeplaner ved hjelp av Webuntis-API av TheNoim
         case "klasse":
-            var schoolname = msg.channel.name.split("-")[0]
-            if (!timer[schoolname].untisName) {
-                msg.channel.send("Denne skolen bruker ikke WebUntis, som er der jeg henter timer fra. De andre kommandoene som ikke innebærer å vise fag vil fortsatt fungere.")
-            } else if (args[0]) {
-                if (args[1] === `timeplan`) {
-                    findAndSaveClasses(args[0], schoolname).then(resultClass => {
-                        if (resultClass == "not found") {
-                            msg.channel.send("Klassen ble ikke funnet")
-                        } else {
-                            let givenDate = new Date();
-                            if (args[2]) {
-                                let currentDay;
-                                if (date.getDay() == 0) {
-                                    currentDay = 7
-                                } else {
-                                    currentDay = date.getDay() - 1
-                                }
-                                if (weekdays.indexOf(args[2]) < date.getDay()) {
-                                    let difference = weekdays.indexOf(args[2]) + 7 - currentDay
-                                    givenDate = givenDate.addDays(difference)
-                                } else {
-                                    let difference = weekdays.indexOf(args[2]) - currentDay
-                                    givenDate = givenDate.addDays(difference)
-                                }
-                                console.log(resultClass);
-                                loginSchool(timer[schoolname].untisName)
-                                    .then(() => {
-                                        console.log(givenDate + " id: " + resultClass.id)
-                                        return untis.getTimetableFor(givenDate, resultClass.id, WebUntisLib.TYPES.CLASS)
-                                            .then(timeTable => {
-                                                console.log(timeTable)
-                                                let ttembed = timetableToEmbed(timeTable, resultClass, givenDate)
-                                                msg.channel.send(ttembed)
-                                                    .then(sentMsg => {
-                                                        if (ttembed.title != 'Timeplanen er tom! :)') {
-                                                            changeReactable(sentMsg, resultClass, givenDate)
-                                                        }
-                                                    })
-                                            })
-                                    }).then(untis.logout())
-                            } else {
-                                console.log(resultClass);
-                                loginSchool(timer[schoolname].untisName)
-                                    .then(() => {
-                                        return untis.getTimetableForToday(resultClass.id, WebUntisLib.TYPES.CLASS)
-                                            .then(timeTable => {
-                                                console.log(timeTable)
-                                                msg.channel.send(timetableToEmbed(timeTable, resultClass, date))
-                                                    .then(sentMsg => changeReactable(sentMsg, resultClass, date))
-                                            })
-                                    }).then(untis.logout())
-                            }
-                        }
-                    })
-                } else {
-                    findAndSaveClasses(args[0], schoolname).then(resultClass => {
-                        if (resultClass == "not found") {
-                            msg.channel.send("Klassen ble ikke funnet")
-                        } else {
-                            let embed = new Discord.MessageEmbed()
-                                .setTitle(resultClass.longName)
-                            msg.channel.send(embed)
-                        }
-                    })
-                }
-
-            } else {
-                msg.channel.send("Du må ha med en klasse etter kommandoen for å kunne se informasjon om den.")
-            }
-            break;
-
-
+            funKlasse(msg,args); break;
         // KOMMANDO HELP. Sender embed definert først i scriptet
-        case "hjelp":
-        case "help":
-
-            msg.channel.send(helpEmbed);
-            break;
-
-
+        case "hjelp": case "help":
+            msg.channel.send(helpEmbed); break;
         // KOMMANDO TIMEPLAN. Gir basic info over økter. Uten fag og webuntis
         case "timeplan":
-
-            if (!timer[msg.channel.name.split("-")[0]]) {
-                msg.channel.send("Kanalen du bruker ble ikke gjenkjent.");
-            } else {
-                msg.channel.send(makeTimeplanEmbed(msg))
-            };
-            break;
-
-
+            funTimeplan(msg); break;
         // KOMMANDO CATO. Easter egg. Ubrukelig
         case "cato":
-
-            msg.channel.send("Cato? CATO?! Neii")
-            break;
-
+            msg.channel.send("Cato? CATO?! Neii"); break;
         // Rom for andre comparisons der case ikke duger
         default:
-
             // KOMMANDO lydfil. Regex etter kommando som slutter med "?"
             if (isReady && /\w*\?/.test(command)) {
                 let match = /(\w*)\?/.exec(command)
-                console.log(match)
-                console.log(match[1])
-                isReady = false;
-                var voiceChannel = msg.member.voice.channel;
-                let files = fs.readdirSync('./src/')
-                console.log(files)
-                if (voiceChannel == null) {
-                    msg.channel.send("Du må være i en voice-kanal for å kunne spille av lydfiler.")
-                } else if (files.indexOf(match[1] + ".mp3") > -1) {
-                    msg.delete()
-                    let ender = () => {
-                        msg.member.voice.channel.leave();
-                    };
-                    voiceChannel.join().then(connection => {
-                        const dispatcher = connection.play(`./src/${match[1]}.mp3`)
-                        dispatcher.setVolume(0.5)
-                        dispatcher.on("finish", ender);
-                    }).catch(err => console.log(err));
-                    isReady = true;
-                } else {
-                    msg.channel.send("Fant ikke den filen.")
-                    isReady = true;
-                }
+                funMusic(msg,match)
             };
     }
 })
