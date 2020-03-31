@@ -231,75 +231,65 @@ async function loginSchool(school) {
 };
 
 function timetableToEmbed(timetable, forClass, givenDate) {
-    if (!timetable[0]) {
-        return new Discord.MessageEmbed().setTitle("Timeplanen er tom! :)").setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()}`)
-    }
-
+    if (!timetable[0]) return new Discord.MessageEmbed().setTitle("Timeplanen er tom! :)").setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()}`);
+    
     let timetableSorted = timetable.sort((a, b) => parseFloat(a.startTime) - parseFloat(b.startTime));
-    let firstTime = timetableSorted[0].startTime
+    let firstTime = timetableSorted[0].startTime;
     let timeArray = {};
-    timeArray[firstTime] = [timetableSorted[0]]
+    timeArray[firstTime] = [timetableSorted[0]];
     for (let i = 1; i < timetableSorted.length; i++) {
-
-        if (Object.keys(timeArray).findIndex(item => item == timetableSorted[i].startTime) == -1) {
-            timeArray[timetableSorted[i].startTime] = [timetableSorted[i]]
-        } else {
-            timeArray[timetableSorted[i].startTime].push(timetableSorted[i])
-        }
-    }
+        if (Object.keys(timeArray).findIndex(item => item == timetableSorted[i].startTime) == -1) timeArray[timetableSorted[i].startTime] = [timetableSorted[i]];
+        else timeArray[timetableSorted[i].startTime].push(timetableSorted[i]);
+    };
 
     for (let i = 1; i < Object.keys(timeArray).length; i++) {
         // hvis innholdet i forrige økt er lik innholdet i økt "i"
         if (timeArray[Object.keys(timeArray)[i - 1]][0].lsnumber == timeArray[Object.keys(timeArray)[i]][0].lsnumber) {
-            changeMultipleProps(timeArray[Object.keys(timeArray)[i - 1]], "endTime", timeArray[Object.keys(timeArray)[i]][0].endTime)
-            delete timeArray[Object.keys(timeArray)[i]]
-            i--
-        }
-    }
+            changeMultipleProps(timeArray[Object.keys(timeArray)[i - 1]], "endTime", timeArray[Object.keys(timeArray)[i]][0].endTime);
+            delete timeArray[Object.keys(timeArray)[i]];
+            i--;
+        };
+    };
 
     let timetableEmbed = new Discord.MessageEmbed()
         .setColor('#0099ff')
         .setTitle(forClass.longName)
-        .setDescription('Timeplan for klasse ' + forClass.longName + ' på ' + weekdaysSun[givenDate.getDay()])
+        .setDescription('Timeplan for klasse ' + forClass.longName + ' på ' + weekdaysSun[givenDate.getDay()]);
     for (let i in Object.keys(timeArray)) {
         // every period ^
         let fieldsToBeAdded = [];
         for (let s in timeArray[Object.keys(timeArray)[i]]) {
-            let subjectNameInfo = timeArray[Object.keys(timeArray)[i]][s].su[0].longname
-            fieldsToBeAdded.push(subjectNameInfo)
+            let subjectNameInfo = timeArray[Object.keys(timeArray)[i]][s].su[0].longname;
+            fieldsToBeAdded.push(subjectNameInfo);
             // every subject in same period ^
         }
-        untisTimeParse(Object.keys(timeArray)[i])
-        timetableEmbed.addField("\n" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].startTime) + "-" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].endTime), fieldsToBeAdded.join('\n'))
-        timetableEmbed.setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()} - updated ${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`)
-    }
-    return timetableEmbed
-}
+        untisTimeParse(Object.keys(timeArray)[i]);
+        timetableEmbed.addField("\n" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].startTime) + "-" + untisTimeParse(timeArray[Object.keys(timeArray)[i]][0].endTime), fieldsToBeAdded.join('\n'));
+        timetableEmbed.setFooter(`${givenDate.getDate()}.${givenDate.getMonth() + 1}.${givenDate.getFullYear()} - updated ${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`);
+    };
+    return timetableEmbed;
+};
 
 function changeMultipleProps(array, property, value) {
-    for (let i in array) {
-        array[i][property] = value
-    }
-}
+    for (let i in array) array[i][property] = value;
+};
 
 async function changeReactable(sentMsg, rClass, dateReacc) {
     let chanid = sentMsg.channel.id;
-    if (currentReactable[chanid]) {
-        sentMsg.channel.messages.fetch(currentReactable[chanid].msgid).then(gotMessage => gotMessage.delete())
-    }
-    await sentMsg.react('⬅️')
-    await sentMsg.react('➡️')
-    currentReactable[chanid] = { msgid: "", class: "" }
-    currentReactable[chanid].msgid = sentMsg.id
-    currentReactable[chanid].class = rClass
-    currentReactable[chanid].dateDisplayed = dateReacc
-}
+    if (currentReactable[chanid]) sentMsg.channel.messages.fetch(currentReactable[chanid].msgid).then(gotMessage => gotMessage.delete());
+    await sentMsg.react('⬅️');
+    await sentMsg.react('➡️');
+    currentReactable[chanid] = { msgid: "", class: "" };
+    currentReactable[chanid].msgid = sentMsg.id;
+    currentReactable[chanid].class = rClass;
+    currentReactable[chanid].dateDisplayed = dateReacc;
+};
 
 Date.prototype.addDays = function (days) {
     let dodate = new Date(this.valueOf());
     dodate.setDate(date.getDate() + days);
     return dodate;
-}
+};
 
 
 //-------------------------------------------- MSG / STRINGS
@@ -331,30 +321,26 @@ var repeatedStrings =
     "beforeS": "Skolen har ikke startet ennå.",
     "break": "Nå er det pause.",
     "weekend": "Nå er det helg. Kos deg!"
-}
+};
 
 function msgNextOkt(msg, skole, when = getClock()) {
-    let currentPeriod = returnCurrentPeriod(skole, when)
+    let currentPeriod = returnCurrentPeriod(skole, when);
 
     switch (currentPeriod[0]) {
         case "iøkt":
-            if (currentPeriod[2] === timer[skole].timer.length - 1 && date.getDay() == 5) {
-                // gjør dette hvis tidspunktet er i siste time.
+            if (currentPeriod[2] === timer[skole].timer.length - 1 && date.getDay() == 5) // gjør dette hvis tidspunktet er i siste time.
                 msg.channel.send(`Nå er det siste økt før helgen! Neste økt er ikke før til mandag kl. ${timer[skole].timer[0].start}. Kos deg!`);
-            } else if (currentPeriod[2] === timer[skole].timer.length - 1) {
-                // gjør dette hvis tidspunktet er i siste time.
+
+            else if (currentPeriod[2] === timer[skole].timer.length - 1) // gjør dette hvis tidspunktet er i siste time.
                 msg.channel.send(`${repeatedStrings.lastO} Neste økt er ${telleTall[0]} økt i morgen kl. ${timer[skole].timer[0].start}. (${howLongSinceUntil(timer[skole].timer[0].start, true, false, when)})`);
-            } else {
-                // gjør dette hvis tidspunktet er i en time
+
+            else // gjør dette hvis tidspunktet er i en time
                 msg.channel.send(`Nå er det time. Neste økt er ${telleTall[currentPeriod[2] + 1]} økt kl. ${timer[skole].timer[currentPeriod[2] + 1].start} (${howLongSinceUntil(timer[skole].timer[currentPeriod[2] + 1].start, true, false, when)})`);
-            };
+            
             break;
         case "etterSkole":
-            if (date.getDay() == 5) {
-                msg.channel.send(`Nå er helg! Neste økt er ikke før mandag kl. ${timer[skole].timer[0].start}. Kos deg!`);
-            } else {
-                msg.channel.send(`${repeatedStrings.afterS} Neste økt er ${telleTall[0]} økt i morgen kl. ${timer[skole].timer[0].start}. (${howLongSinceUntil(timer[skole].timer[0].start, true, false, when)})`);
-            }
+            if (date.getDay() == 5) msg.channel.send(`Nå er helg! Neste økt er ikke før mandag kl. ${timer[skole].timer[0].start}. Kos deg!`);
+            else msg.channel.send(`${repeatedStrings.afterS} Neste økt er ${telleTall[0]} økt i morgen kl. ${timer[skole].timer[0].start}. (${howLongSinceUntil(timer[skole].timer[0].start, true, false, when)})`);
             break;
         case "førSkole":
             msg.channel.send(`${repeatedStrings.beforeS} Første time starter ${timer[skole].timer[0].start}. (${howLongSinceUntil(timer[skole].timer[0].start, true, false, when)})`);
@@ -368,23 +354,20 @@ function msgNextOkt(msg, skole, when = getClock()) {
         default:
             msg.channel.send("Noe gikk galt! Det kan hende timene ikke er satt opp for denne skolen. Kontakt admin.");
             console.error("Missing hours or error");
-    }
+    };
 };
 
 function msgCurrentOkt(msg, skole, when = getClock()) {
-    let currentPeriod = returnCurrentPeriod(skole, when)
+    let currentPeriod = returnCurrentPeriod(skole, when);
 
-    console.log(currentPeriod)
+    console.log(currentPeriod);
 
     switch (currentPeriod[0]) {
         case "iøkt":
-            if (currentPeriod[2] === timer[skole].timer.length - 1) {
-                // gjør dette hvis tidspunktet er i siste time.
+            if (currentPeriod[2] === timer[skole].timer.length - 1) // gjør dette hvis tidspunktet er i siste time.
                 msg.channel.send(`${repeatedStrings.lastO} Timen slutter kl. ${timer[skole].timer[currentPeriod[2]].slutt} (${howLongSinceUntil(timer[skole].timer[currentPeriod[2]].slutt, true, false, when)})`);
-            } else {
-                // gjør dette hvis tidspunktet er i en time
+            else // gjør dette hvis tidspunktet er i en time
                 msg.channel.send(`Nå er det ${telleTall[currentPeriod[2]]} økt. Timen slutter kl. ${timer[skole].timer[currentPeriod[2]].slutt} (${howLongSinceUntil(timer[skole].timer[currentPeriod[2]].slutt, true, false, when)})`);
-            };
             break;
         case "etterSkole":
             msg.channel.send(repeatedStrings.afterS); break;
@@ -397,7 +380,7 @@ function msgCurrentOkt(msg, skole, when = getClock()) {
         default:
             msg.channel.send("Noe gikk galt! Det kan hende timene ikke er satt opp for denne skolen. Kontakt admin.");
             console.error("Missing hours or error");
-    }
+    };
 
 };
 
@@ -407,9 +390,8 @@ function funSetChannel(msg,args) {
     if (msg.member.roles.cache.some(role => role.name === 'Vaktmester')) {
         console.log(msg.channel.id)
         const setchannel = msg.channel;
-        if (!args[0]) {
-            msg.channel.send("Du må skrive forkortelsen til skolen du vil binde til kanalen. (eks.)");
-        } else {
+        if (!args[0]) msg.channel.send("Du må skrive forkortelsen til skolen du vil binde til kanalen. (eks.)");
+        else {
             msg.reply(`Setter denne kanalen (${msg.channel.id}) som kanal for ${args[0]}!`);
             var timerContent = fs.readFileSync("timer.json");
             var timerJson = JSON.parse(timerContent);
@@ -423,39 +405,24 @@ function funSetChannel(msg,args) {
             setchannel.setTopic(`Dette er skoletime-kanalen for ${timer[args].fullName}.`);
         };
 
-    } else {
-        msg.channel.send("Du har ikke rettigheter nok til å bruke denne kommandoen")
-    }
+    } else msg.channel.send("Du har ikke rettigheter nok til å bruke denne kommandoen")
 }
 
 function funTime(msg,args) {
-    var schoolname = msg.channel.name.split("-")[0]
+    var schoolname = msg.channel.name.split("-")[0];
     if (!args[0] || args[0] === `info`) {
-        if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) {
-            msgCurrentOkt(msg, schoolname);
-        } else {
-            msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-        };
-
+        if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) msgCurrentOkt(msg, schoolname);
+        else msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
     } else if (args[0] === `neste`) {
-
-        if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) {
-            msgNextOkt(msg, schoolname);
-        } else {
-            msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-        };
-
+        if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) msgNextOkt(msg, schoolname);
+        else msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
     } else if (/[0-2]\d:[0-6]\d/.test(args[0])) {
         if (timer[schoolname] && checkIfSchoolExists("timer", schoolname)) {
             msg.channel.send(`Bruker tidspunkt ${args[0]}.`);
             msgNextOkt(msg, schoolname, args[0]);
-        } else {
-            msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
-        };
-
-
-    } else { msg.reply("Tidspunktet må være i formatet TT:MM.") };
-}
+        } else msg.channel.send("Kanalen du bruker ble ikke gjenkjent eller timene er ikke satt opp. Kontakt admin.");
+    } else msg.reply("Tidspunktet må være i formatet TT:MM.");
+};
 
 function funKlasse(msg,args) {
     var schoolname = msg.channel.name.split("-")[0]
