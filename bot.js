@@ -150,7 +150,7 @@ function howLongSinceUntil(sinceUntilThis, stringReturn = false, allowSince = fa
 }
 
 function getNameByIndex(obj, val) {
-    return Object.keys(obj)[val].toString();
+    return Object.keys(obj)[val];
 }
 
 function untisTimeParse(time) {
@@ -166,18 +166,18 @@ function intervalFunc() {
     if (date.getDay() > 0 && date.getDay() < 6) {
         isWeekend = false;
         let totalSchools = Object.keys(timer).length;
-        console.log(`[${date.getTimeString}]`);
+        console.log(`[${date.getTimeString()}]`);
         for (let skolecount = 0; skolecount < totalSchools; skolecount++) {
             console.log("--- " + getNameByIndex(timer, skolecount) + " ---");
             for (let i = 0; i < timer[getNameByIndex(timer, skolecount)].timer.length; i++) {
                 // Notify 5-6 min before event
-                let milliCurrentStart = new UntisDate(timer[getNameByIndex(timer, skolecount)].timer[i].start),
-                    milliClock = date;
+                let milliCurrentStart = new UntisDate(timer[getNameByIndex(timer, skolecount)].timer[i].start).getDayMilliseconds(),
+                    milliClock = date.getDayMilliseconds();
                 if (milliClock >= (milliCurrentStart - 360000) && milliClock <= (milliCurrentStart - 300000) && !(milliClock - lastNoti[getNameByIndex(timer, skolecount)] <= 300000)) {
                     client.channels.fetch(timer[getNameByIndex(timer, skolecount)].kanal)
                         .then(channel => channel.send("Neste økt starter om 5 min!"))
                         .catch(console.error);
-                    lastNoti[getNameByIndex(timer, skolecount)] = date;
+                    lastNoti[getNameByIndex(timer, skolecount)] = date.getDayMilliseconds();
                     console.log(`class found ${i} sent notification`);
                 }
             }
